@@ -1,3 +1,7 @@
+import pandas as pd
+from typing import Literal
+
+
 class FoodCategory:
     _registry: dict[str, 'FoodCategory'] = {}
 
@@ -116,19 +120,50 @@ class Person:
     def __repr__(self):
         return f"Person({self.name})"
 
-def print_compatibility_matrix(meals: list[Meal], people: list[Person]):
-    # Header row
-    header = ["Meal \\ Person"] + [p.name for p in people]
-    col_width = max(len(h) for h in header) + 2
-    print("".join(h.ljust(col_width) for h in header))
+class MealCompatibilityAnalyzer:
+    def __init__(self, meals: list[Meal], people: list[Person]):
+        self.meals = meals
+        self.people = people
+        self._matrix: pd.DataFrame | None = None
 
-    # Rows for each meal
-    for meal in meals:
-        row = [meal.name]
-        for person in people:
-            compatible = meal.is_compatible_with(person.restriction)
-            row.append("✅" if compatible else "❌")
-        print("".join(cell.ljust(col_width) for cell in row))
+    def build_matrix(self) -> pd.DataFrame:
+        """Build and store the compatibility matrix as a pandas DataFrame."""
+        data = {
+            person.name: [
+                meal.is_compatible_with(person.restriction) for meal in self.meals
+            ]
+            for person in self.people
+        }
+        self._matrix = pd.DataFrame(data, index=[meal.name for meal in self.meals])
+        return self._matrix
+
+    def get_matrix(self) -> pd.DataFrame:
+        """Returns the matrix, building it if needed."""
+        if self._matrix is None:
+            return self.build_matrix()
+        return self._matrix
+
+    def print_matrix(
+        self, mode: Literal["plain", "markdown"] = "plain"
+    ):
+        df = self.get_matrix()
+        df_display = df.applymap(lambda val: "✅" if val else "❌")
+
+        if mode == "plain":
+            print(df_display)
+        elif mode == "markdown":
+            print(df_display.to_markdown())
+        else:
+            raise ValueError(f"Unsupported mode: {mode}")
+
+    def export_csv(self, path: str):
+        self.get_matrix().to_csv(path, index=True)
+
+    def export_markdown(self, path: str):
+        df_display = self.get_matrix().applymap(lambda val: "✅" if val else "❌")
+        with open(path, "w") as f:
+            f.write(df_display.to_markdown())
+
 
 
 if __name__ == '__main__':
