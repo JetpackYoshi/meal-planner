@@ -1,7 +1,6 @@
 import pandas as pd
+from collections import OrderedDict
 from typing import Literal
-
-from tags import *
 
 class FoodCategory:
     _registry: dict[str, 'FoodCategory'] = {}
@@ -113,22 +112,37 @@ def categorize_from_string(ingredient_name: str) -> FoodCategory:
             return category
     raise ValueError(f"No matching category found for '{ingredient_name}'")
 
-def get_dietary_tags(excluded: set[str]) -> list[str]:
-    normalized = set(x.upper() for x in excluded)
+class TagRegistry:
+    def __init__(self):
+        # Order = priority (first match wins)
+        self._tag_map: OrderedDict[str, DietaryRestriction] = OrderedDict()
 
-    # Canonical patterns (match exact sets)
-    canonical_tags = [
-        ("VEGAN", {"ANIMAL_PRODUCTS"}),
-        ("VEGETARIAN", {"MEAT", "FISH", "SHELLFISH"}),
-        ("PESCATARIAN", {"MEAT"}),
-    ]
+    def register_tag(self, tag_name: str, restriction: DietaryRestriction, *, overwrite: bool = False):
+        tag_name = tag_name.upper()
+        if tag_name in self._tag_map and not overwrite:
+            raise ValueError(f"Tag '{tag_name}' already registered.")
+        self._tag_map[tag_name] = restriction
 
-    for label, required_exclusions in canonical_tags:
-        if normalized == required_exclusions:
-            return [label]
+    def get_tag(self, tag_name: str) -> DietaryRestriction:
+        return self._tag_map[tag_name.upper()]
 
-    # Fallback: individual "-FREE" tags
-    return [f"{category}-FREE" for category in sorted(normalized)]
+    def generate_tags(self, restriction: DietaryRestriction) -> list[str]:
+        for tag, known in self._tag_map.items():
+            if restriction.excluded == known.excluded:
+                return [tag]  # First exact match wins
+        return [f"{cat}-FREE" for cat in sorted(restriction.excluded)]
+
+    def all_tags(self) -> list[str]:
+        return list(self._tag_map.keys())
+
+# Global registry
+tag_registry = TagRegistry()
+
+# Canonical definitions
+# Register tags in priority order (most specific to least specific)
+tag_registry.register_tag("VEGAN", DietaryRestriction({"ANIMAL_PRODUCTS"}))
+tag_registry.register_tag("VEGETARIAN", DietaryRestriction({"MEAT", "FISH", "SHELLFISH"}))
+tag_registry.register_tag("PESCATARIAN", DietaryRestriction({"MEAT"}))
 
 class Person:
     def __init__(self, name: str, restriction: DietaryRestriction = None, tag: str = None):
