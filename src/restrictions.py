@@ -108,7 +108,27 @@ def categorize_from_string(ingredient_name: str) -> FoodCategory:
             return category
     raise ValueError(f"No matching category found for '{ingredient_name}'")
 
+class Person:
+    def __init__(self, name: str, restriction: DietaryRestriction):
+        self.name = name
+        self.restriction = restriction
 
+    def __repr__(self):
+        return f"Person({self.name})"
+
+def print_compatibility_matrix(meals: list[Meal], people: list[Person]):
+    # Header row
+    header = ["Meal \\ Person"] + [p.name for p in people]
+    col_width = max(len(h) for h in header) + 2
+    print("".join(h.ljust(col_width) for h in header))
+
+    # Rows for each meal
+    for meal in meals:
+        row = [meal.name]
+        for person in people:
+            compatible = meal.is_compatible_with(person.restriction)
+            row.append("✅" if compatible else "❌")
+        print("".join(cell.ljust(col_width) for cell in row))
 
 
 if __name__ == '__main__':
