@@ -63,6 +63,27 @@ class DietaryRestriction:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(Excludes: {sorted(self.excluded)})"
+    
+class Meal:
+    def __init__(self, name: str, ingredients: list[FoodCategory]):
+        self.name: str = name
+        self.ingredients: list[FoodCategory] = ingredients
+
+    def categories(self) -> set[str]:
+        # Return the full set of all food categories and their ancestors
+        all_categories = set()
+        for item in self.ingredients:
+            all_categories.add(item.name)
+            all_categories |= item.ancestors()
+        return all_categories
+
+    def is_compatible_with(self, restriction: DietaryRestriction) -> bool:
+        return restriction.is_compatible_with(self.ingredients)
+
+    def __repr__(self) -> str:
+        categories = ", ".join(cat.name for cat in self.ingredients)
+        return f"Meal({self.name}: [{categories}])"
+
 
 
 if __name__ == '__main__':
