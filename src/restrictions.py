@@ -1,10 +1,10 @@
 class FoodCategory:
-    _registry = {}
+    _registry: dict[str, 'FoodCategory'] = {}
 
     def __init__(self, name: str):
-        self.name = name.upper()
-        self.parents = set()
-        self.children = set()
+        self.name: str = name.upper()
+        self.parents: set[str] = set()
+        self.children: set[str] = set()
         FoodCategory._registry[self.name] = self
 
     def add_parent(self, parent_name: str):
@@ -26,11 +26,11 @@ class FoodCategory:
         category_name = category_name.upper()
         return category_name == self.name or category_name in self.ancestors()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"FoodCategory({self.name})"
 
     @classmethod
-    def define(cls, name: str, parents: set[str] = None):
+    def define(cls, name: str, parents: set[str] = None) -> 'FoodCategory':
         obj = cls._registry.get(name.upper())
         if not obj:
             obj = cls(name)
@@ -44,21 +44,24 @@ class FoodCategory:
         return cls._registry[name.upper()]
 
     @classmethod
-    def all(cls) -> list:
+    def all(cls) -> list['FoodCategory']:
         return list(cls._registry.values())
 
+    @classmethod
+    def reset(cls):
+        cls._registry = {}
 
 class DietaryRestriction:
     def __init__(self, excluded: set[str]):
-        self.excluded = {name.upper() for name in excluded}
+        self.excluded: set[str] = {name.upper() for name in excluded}
 
     def forbids(self, food: FoodCategory) -> bool:
-        return any(food.is_a(forbidden) for forbidden in self.excluded)
+        return any(food.is_a(excluded) for excluded in self.excluded)
 
     def is_compatible_with(self, ingredients: list[FoodCategory]) -> bool:
         return all(not self.forbids(item) for item in ingredients)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}(Excludes: {sorted(self.excluded)})"
 
 
