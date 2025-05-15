@@ -112,13 +112,34 @@ def categorize_from_string(ingredient_name: str) -> FoodCategory:
             return category
     raise ValueError(f"No matching category found for '{ingredient_name}'")
 
+def get_dietary_tags(excluded: set[str]) -> list[str]:
+    normalized = set(x.upper() for x in excluded)
+
+    # Canonical patterns (match exact sets)
+    canonical_tags = [
+        ("VEGAN", {"ANIMAL_PRODUCTS"}),
+        ("VEGETARIAN", {"MEAT", "FISH", "SHELLFISH"}),
+        ("PESCATARIAN", {"MEAT"}),
+    ]
+
+    for label, required_exclusions in canonical_tags:
+        if normalized == required_exclusions:
+            return [label]
+
+    # Fallback: individual "-FREE" tags
+    return [f"{category}-FREE" for category in sorted(normalized)]
+
 class Person:
     def __init__(self, name: str, restriction: DietaryRestriction):
         self.name = name
         self.restriction = restriction
+    
+    def label(self) -> str:
+        tags = get_dietary_tags(self.restriction.excluded)
+        return f"{self.name} [{' | '.join(tags)}]"
 
     def __repr__(self):
-        return f"Person({self.name})"
+        return self.label()
 
 class MealCompatibilityAnalyzer:
     def __init__(self, meals: list[Meal], people: list[Person]):
@@ -129,7 +150,7 @@ class MealCompatibilityAnalyzer:
     def build_matrix(self) -> pd.DataFrame:
         """Build and store the compatibility matrix as a pandas DataFrame."""
         data = {
-            person.name: [
+            person.label(): [
                 meal.is_compatible_with(person.restriction) for meal in self.meals
             ]
             for person in self.people
