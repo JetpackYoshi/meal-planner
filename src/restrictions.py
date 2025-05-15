@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Literal
 
+from tags import *
 
 class FoodCategory:
     _registry: dict[str, 'FoodCategory'] = {}
@@ -135,7 +136,7 @@ class Person:
         self.restriction = restriction
     
     def label(self) -> str:
-        tags = get_dietary_tags(self.restriction.excluded)
+        tags = tag_registry.generate_tags(self.restriction.excluded)
         return f"{self.name} [{' | '.join(tags)}]"
 
     def __repr__(self):
@@ -190,7 +191,7 @@ class MealCompatibilityAnalyzer:
         self, mode: Literal["plain", "markdown"] = "plain"
     ):
         df = self.get_matrix()
-        df_display = df.applymap(lambda val: "✅" if val else "❌")
+        df_display = df.map(lambda val: "✅" if val else "❌")
 
         if mode == "plain":
             print(df_display)
@@ -206,7 +207,6 @@ class MealCompatibilityAnalyzer:
         df_display = self.get_matrix().applymap(lambda val: "✅" if val else "❌")
         with open(path, "w") as f:
             f.write(df_display.to_markdown())
-
 
 
 if __name__ == '__main__':
