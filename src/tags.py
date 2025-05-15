@@ -1,28 +1,32 @@
+from restrictions import DietaryRestriction
+
 class TagRegistry:
     def __init__(self):
-        self._tag_map: dict[str, set[str]] = {}
+        self._tag_map: dict[str, DietaryRestriction] = {}
 
-    def register_tag(self, name: str, excluded_categories: set[str]):
-        self._tag_map[name.upper()] = {x.upper() for x in excluded_categories}
+    def register_tag(self, tag_name: str, restriction: DietaryRestriction):
+        self._tag_map[tag_name.upper()] = restriction
 
-    def generate_tags(self, excluded: set[str]) -> list[str]:
-        normalized = set(x.upper() for x in excluded)
+    def get_tag(self, tag_name: str) -> DietaryRestriction:
+        return self._tag_map[tag_name.upper()]
 
-        # Exact matches first
-        for tag, required_exclusions in self._tag_map.items():
-            if normalized == required_exclusions:
+    def generate_tags(self, restriction: DietaryRestriction) -> list[str]:
+        # Try to find an exact match
+        for tag, known_restriction in self._tag_map.items():
+            if restriction.excluded == known_restriction.excluded:
                 return [tag]
 
-        # Fallback: individual tags
-        return [f"{x}-FREE" for x in sorted(normalized)]
+        # Fallback to individual "-FREE" labels
+        return [f"{item}-FREE" for item in sorted(restriction.excluded)]
 
-    def all_tags(self) -> dict[str, set[str]]:
-        return dict(self._tag_map)
+    def all_tags(self) -> list[str]:
+        return list(self._tag_map.keys())
+
 
 # Global registry
 tag_registry = TagRegistry()
 
 # Canonical definitions
-tag_registry.register_tag("VEGAN", {"ANIMAL_PRODUCTS"})
-tag_registry.register_tag("VEGETARIAN", {"MEAT", "FISH", "SHELLFISH"})
-tag_registry.register_tag("PESCATARIAN", {"MEAT"})
+tag_registry.register_tag("VEGAN", DietaryRestriction({"ANIMAL_PRODUCTS"}))
+tag_registry.register_tag("VEGETARIAN", DietaryRestriction({"MEAT", "FISH", "SHELLFISH"}))
+tag_registry.register_tag("PESCATARIAN", DietaryRestriction({"MEAT"}))

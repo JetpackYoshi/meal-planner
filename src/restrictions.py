@@ -131,16 +131,23 @@ def get_dietary_tags(excluded: set[str]) -> list[str]:
     return [f"{category}-FREE" for category in sorted(normalized)]
 
 class Person:
-    def __init__(self, name: str, restriction: DietaryRestriction):
+    def __init__(self, name: str, restriction: DietaryRestriction = None, tag: str = None):
         self.name = name
-        self.restriction = restriction
-    
+
+        if restriction:
+            self.restriction = restriction
+        elif tag:
+            self.restriction = tag_registry.get_tag(tag)
+        else:
+            raise ValueError("Must provide either a restriction or a tag.")
+
     def label(self) -> str:
-        tags = tag_registry.generate_tags(self.restriction.excluded)
+        tags = tag_registry.generate_tags(self.restriction)
         return f"{self.name} [{' | '.join(tags)}]"
 
     def __repr__(self):
         return self.label()
+
 
 class MealCompatibilityAnalyzer:
     def __init__(self, meals: list[Meal], people: list[Person]):
