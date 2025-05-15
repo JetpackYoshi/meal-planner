@@ -136,6 +136,28 @@ class MealCompatibilityAnalyzer:
         }
         self._matrix = pd.DataFrame(data, index=[meal.name for meal in self.meals])
         return self._matrix
+    
+    def score_meals(self) -> pd.Series:
+        """Returns a Series with the number of people compatible with each meal."""
+        matrix = self.get_matrix()
+        return matrix.sum(axis=1)  # Sum True values across each row
+
+    def get_most_compatible_meals(self, top_n: int | None = None) -> pd.DataFrame:
+        """Returns a DataFrame of meals sorted by descending compatibility count."""
+        matrix = self.get_matrix()
+        scores = self.score_meals()
+        sorted_df = matrix.assign(Compatible_Count=scores).sort_values(
+            "Compatible_Count", ascending=False
+        )
+        if top_n:
+            return sorted_df.head(top_n)
+        return sorted_df
+
+    def get_universally_compatible_meals(self) -> pd.DataFrame:
+        """Returns meals compatible with all people."""
+        matrix = self.get_matrix()
+        return matrix[matrix.all(axis=1)]
+
 
     def get_matrix(self) -> pd.DataFrame:
         """Returns the matrix, building it if needed."""
