@@ -1,17 +1,25 @@
 class FoodCategory:
-    """Defines A food category"""
     _registry = {}
 
-    def __init__(self, name: str, parents: set[str] = None):
+    def __init__(self, name: str):
         self.name = name.upper()
-        self.parents = set(parents) if parents else set()
+        self.parents = set()
+        self.children = set()
         FoodCategory._registry[self.name] = self
 
+    def add_parent(self, parent_name: str):
+        parent_name = parent_name.upper()
+        self.parents.add(parent_name)
+        parent = FoodCategory._registry.get(parent_name)
+        if parent:
+            parent.children.add(self.name)
+        else:
+            raise ValueError(f"Parent category '{parent_name}' is not defined.")
+
     def ancestors(self) -> set[str]:
-        '''Recursively find all parent categories'''
         result = set(self.parents)
         for parent in self.parents:
-            result |= FoodCategory._registry[parent].ancestors()
+            result |= FoodCategory.get(parent).ancestors()
         return result
 
     def is_a(self, category_name: str) -> bool:
@@ -22,12 +30,23 @@ class FoodCategory:
         return f"FoodCategory({self.name})"
 
     @classmethod
+    def define(cls, name: str, parents: set[str] = None):
+        obj = cls._registry.get(name.upper())
+        if not obj:
+            obj = cls(name)
+        if parents:
+            for parent in parents:
+                obj.add_parent(parent)
+        return obj
+
+    @classmethod
     def get(cls, name: str) -> 'FoodCategory':
         return cls._registry[name.upper()]
 
     @classmethod
     def all(cls) -> list:
         return list(cls._registry.values())
+
 
 class DietaryRestriction:
     def __init__(self, excluded: set[str]):
