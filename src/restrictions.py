@@ -63,26 +63,51 @@ class DietaryRestriction:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(Excludes: {sorted(self.excluded)})"
-    
+
+class Ingredient:
+    def __init__(self, name: str, category: FoodCategory, calories: float = 0.0, allergens: set[str] = None):
+        self.name = name
+        self.category = category
+        self.calories = calories
+        self.allergens = allergens or set()
+
+    def __repr__(self) -> str:
+        allergen_info = f" (Allergens: {', '.join(self.allergens)})" if self.allergens else ""
+        return f"{self.name} [{self.category.name}] - {self.calories} kcal{allergen_info}"
+
 class Meal:
-    def __init__(self, name: str, ingredients: list[FoodCategory]):
-        self.name: str = name
-        self.ingredients: list[FoodCategory] = ingredients
+    def __init__(self, name: str, ingredients: list[Ingredient]):
+        self.name = name
+        self.ingredients = ingredients
 
     def categories(self) -> set[str]:
-        # Return the full set of all food categories and their ancestors
         all_categories = set()
-        for item in self.ingredients:
-            all_categories.add(item.name)
-            all_categories |= item.ancestors()
+        for ingredient in self.ingredients:
+            cat = ingredient.category
+            all_categories.add(cat.name)
+            all_categories |= cat.ancestors()
         return all_categories
 
     def is_compatible_with(self, restriction: DietaryRestriction) -> bool:
-        return restriction.is_compatible_with(self.ingredients)
+        return restriction.is_compatible_with([ing.category for ing in self.ingredients])
+
+    def is_compatible_with_group(self, restrictions: list[DietaryRestriction]) -> bool:
+        return all(self.is_compatible_with(r) for r in restrictions)
+
+    def total_calories(self) -> float:
+        return sum(ing.calories for ing in self.ingredients)
 
     def __repr__(self) -> str:
-        categories = ", ".join(cat.name for cat in self.ingredients)
-        return f"Meal({self.name}: [{categories}])"
+        return f"Meal({self.name}, {len(self.ingredients)} items, {self.total_calories():.1f} kcal)"
+
+
+def categorize_from_string(ingredient_name: str) -> FoodCategory:
+    name = ingredient_name.strip().upper()
+    for category in FoodCategory.all():
+        if category.name in name:
+            return category
+    raise ValueError(f"No matching category found for '{ingredient_name}'")
+
 
 
 
