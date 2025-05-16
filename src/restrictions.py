@@ -127,38 +127,44 @@ class TagRegistry:
         return self._tag_map[tag_name.upper()]
 
     def generate_tags(self, restriction: DietaryRestriction) -> list[str]:
-        exact_matches = []
-        partial_matches = []
+        normalized = restriction.excluded
 
+        # First: exact match
         for tag, known in self._tag_map.items():
-            if restriction.excluded == known.excluded:
-                exact_matches.append((tag, 1.0))  # full match
-            elif known.excluded.issubset(restriction.excluded):
-                score = len(known.excluded) / len(restriction.excluded)
-                partial_matches.append((tag, score))
+            if normalized == known.excluded:
+                return [tag]
 
-        if exact_matches:
-            return [exact_matches[0][0]]  # highest-priority full match
+        # Step 1: Gather subset-match candidates
+        candidates = []
+        for tag, known in self._tag_map.items():
+            if known.excluded.issubset(normalized):
+                candidates.append((tag, known.excluded))
 
-        if partial_matches:
-            # Sort by score descending, then registration order (i.e., list order)
-            partial_matches.sort(key=lambda x: (-x[1], list(self._tag_map.keys()).index(x[0])))
-            return [partial_matches[0][0]]
+        # Step 2: Greedy cover — prefer largest unique matches first
+        used = set()
+        result = []
+        remaining = set(normalized)
 
-        # Fallback to individual "-FREE" tags
-        return [f"{x}-FREE" for x in sorted(restriction.excluded)]
+        for tag, excluded in sorted(candidates, key=lambda x: -len(x[1])):
+            if not excluded <= remaining:
+                continue
+            result.append(tag)
+            remaining -= excluded
+            if not remaining:
+                break
+
+        # Step 3: Fallback if any exclusions remain
+        if remaining:
+            result.extend(f"{x}-FREE" for x in sorted(remaining))
+
+        return result
+
 
     def all_tags(self) -> list[str]:
         return list(self._tag_map.keys())
 
 # Global registry
 tag_registry = TagRegistry()
-
-# Canonical definitions
-# Register tags in priority order (most specific to least specific)
-tag_registry.register_tag("VEGAN", DietaryRestriction({"ANIMAL_PRODUCTS"}))
-tag_registry.register_tag("VEGETARIAN", DietaryRestriction({"MEAT", "FISH", "SHELLFISH"}))
-tag_registry.register_tag("PESCATARIAN", DietaryRestriction({"MEAT"}))
 
 class Person:
     def __init__(self, name: str, restriction: DietaryRestriction = None, tag: str = None):
