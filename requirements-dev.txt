@@ -1,4 +1,15 @@
-pytest
-pytest-cov
-lark
-jupyter
+# Testing
+pytest>=8.0.0
+pytest-cov>=6.0.0
+
+# Documentation
+sphinx>=8.0.0
+sphinx-autodoc-typehints>=3.0.0
+nbsphinx>=0.9.0
+jupyter>=1.0.0
+
+# Development Tools
+lark>=1.0.0
+
+# Include all production dependencies
+-r requirements.txt
