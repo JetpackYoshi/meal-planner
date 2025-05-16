@@ -127,10 +127,26 @@ class TagRegistry:
         return self._tag_map[tag_name.upper()]
 
     def generate_tags(self, restriction: DietaryRestriction) -> list[str]:
+        exact_matches = []
+        partial_matches = []
+
         for tag, known in self._tag_map.items():
             if restriction.excluded == known.excluded:
-                return [tag]  # First exact match wins
-        return [f"{cat}-FREE" for cat in sorted(restriction.excluded)]
+                exact_matches.append((tag, 1.0))  # full match
+            elif known.excluded.issubset(restriction.excluded):
+                score = len(known.excluded) / len(restriction.excluded)
+                partial_matches.append((tag, score))
+
+        if exact_matches:
+            return [exact_matches[0][0]]  # highest-priority full match
+
+        if partial_matches:
+            # Sort by score descending, then registration order (i.e., list order)
+            partial_matches.sort(key=lambda x: (-x[1], list(self._tag_map.keys()).index(x[0])))
+            return [partial_matches[0][0]]
+
+        # Fallback to individual "-FREE" tags
+        return [f"{x}-FREE" for x in sorted(restriction.excluded)]
 
     def all_tags(self) -> list[str]:
         return list(self._tag_map.keys())
