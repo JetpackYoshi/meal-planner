@@ -210,6 +210,16 @@ def categorize_from_string(ingredient_name: str) -> FoodCategory:
             return category
     raise ValueError(f"No matching category found for '{ingredient_name}'")
 
+
+class Tag:
+    def __init__(self, name: str, restriction: DietaryRestriction, category: str = "unspecified"):
+        self.name = name.upper()
+        self.restriction = restriction
+        self.category = category.lower()
+
+    def __repr__(self):
+        return f"Tag({self.name}, category={self.category})"
+
 # ------------------------------
 # TagRegistry
 # ------------------------------
@@ -219,16 +229,16 @@ class TagRegistry:
     Tags are prioritized by registration order.
     """
     def __init__(self):
-        self._tag_map: OrderedDict[str, DietaryRestriction] = OrderedDict()
+        self._tag_map: OrderedDict[str, Tag] = OrderedDict()
 
-    def register_tag(self, tag_name: str, restriction: DietaryRestriction, *, overwrite: bool = False):
+    def register_tag(self, tag_name: str, restriction: DietaryRestriction, category: str = "unspecified", *, overwrite: bool = False):
         tag_name = tag_name.upper()
         if tag_name in self._tag_map and not overwrite:
             raise ValueError(f"Tag '{tag_name}' already registered.")
-        self._tag_map[tag_name] = restriction
+        self._tag_map[tag_name] = Tag(tag_name, restriction, category)
 
     def get_tag(self, tag_name: str) -> DietaryRestriction:
-        return self._tag_map[tag_name.upper()]
+        return self._tag_map[tag_name.upper()].restriction
 
     def generate_tags(self, restriction: DietaryRestriction) -> list[str]:
         """
@@ -247,30 +257,27 @@ class TagRegistry:
         """
         normalized = restriction.excluded
 
-        # First: exact match
-        for tag, known in self._tag_map.items():
-            if normalized == known.excluded:
-                return [tag]
+        # Exact match
+        for tag in self._tag_map.values():
+            if normalized == tag.restriction.excluded:
+                return [tag.name]
 
-        # Step 1: Gather subset-match candidates
+        # Greedy subset match
         candidates = []
-        for tag, known in self._tag_map.items():
-            if known.excluded.issubset(normalized):
-                candidates.append((tag, known.excluded))
+        for tag in self._tag_map.values():
+            if tag.restriction.excluded.issubset(normalized):
+                candidates.append((tag.name, tag.restriction.excluded))
 
-        # Step 2: Greedy cover — prefer largest unique matches first
         result = []
         remaining = set(normalized)
-
-        for tag, excluded in sorted(candidates, key=lambda x: -len(x[1])):
+        for name, excluded in sorted(candidates, key=lambda x: -len(x[1])):
             if not excluded <= remaining:
                 continue
-            result.append(tag)
+            result.append(name)
             remaining -= excluded
             if not remaining:
                 break
 
-        # Step 3: Fallback if any exclusions remain
         if remaining:
             result.extend(f"{x}-FREE" for x in sorted(remaining))
 
@@ -278,6 +285,22 @@ class TagRegistry:
 
     def all_tags(self) -> list[str]:
         return list(self._tag_map.keys())
+    
+    def get_tags_by_category(self, category: str) -> list[str]:
+        """
+        Returns a list of tag names matching the specified category.
+
+        Parameters
+        ----------
+        category : str
+            The category label to filter by (e.g., "ethical", "allergen")
+
+        Returns
+        -------
+        list of str
+            Tag names in the given category
+        """
+        return [tag.name for tag in self._tag_map.values() if tag.category == category.lower()]
 
 # Global registry
 tag_registry = TagRegistry()
