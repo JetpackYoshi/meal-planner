@@ -1,5 +1,5 @@
 import pytest
-from mealplanner.dietary_model import *
+from mealplanner.natural_language_parsing import *
 import pandas as pd
 
 @pytest.mark.parametrize("input_text,expected_exclusions", [
