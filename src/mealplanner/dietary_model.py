@@ -2,6 +2,7 @@ import pandas as pd
 from collections import OrderedDict
 from typing import Literal
 import logging
+from rapidfuzz import process
 
 logger = logging.getLogger("diet_parser")
 logger.setLevel(logging.DEBUG)
@@ -234,66 +235,104 @@ class Tag:
 # -----------------------------------
 # Utility: parse_freeform_restriction
 # -----------------------------------
-def parse_freeform_restriction(text: str) -> DietaryRestriction | None:
+
+# Keywords and their corresponding exclusion sets
+KEYWORD_MAP = {
+    "vegetarian": {"MEAT", "FISH", "SHELLFISH"},
+    "vegan": {"ANIMAL_PRODUCTS"},
+    "pescatarian": {"MEAT"},
+    "dairy": {"DAIRY"},
+    "lactose": {"DAIRY"},
+    "milk": {"DAIRY"},
+    "cheese": {"DAIRY"},
+    "egg": {"EGGS"},
+    "eggs": {"EGGS"},
+    "beef": {"MEAT"},
+    "meat": {"MEAT"},
+    "fish": {"FISH"},
+    "shellfish": {"SHELLFISH"},
+    "nut": {"NUTS"},
+    "nuts": {"NUTS"},
+    "peanut": {"NUTS"},
+    "tree nut": {"NUTS"},
+    "gluten": {"GLUTEN"},
+}
+
+NO_RESTRICTION_PHRASES = {"", "no", "none", "nope", "naw", "nah", "n/a", "none!", "nope!"}
+
+def parse_freeform_restriction(
+    text: str,
+    *,
+    fuzz_threshold: int = 85,
+    return_debug: bool = False
+) -> DietaryRestriction | tuple[DietaryRestriction | None, dict] | None:
     """
-    Parses a freeform dietary restriction string using rule-based matching.
+    Parses a freeform dietary restriction string with optional fuzzy matching and debug metadata.
 
     Parameters
     ----------
     text : str
-        Raw user input describing dietary restrictions.
+        User-entered freeform dietary restriction.
+    fuzz_threshold : int
+        Minimum similarity ratio (0-100) for fuzzy keyword matching.
+    return_debug : bool
+        If True, return a tuple with debug metadata.
 
     Returns
     -------
     DietaryRestriction or None
-        The parsed restriction object, or None if no restriction is inferred.
+        If return_debug is False.
+    (DietaryRestriction or None, dict)
+        If return_debug is True.
     """
     original = text
     text = text.strip().lower()
 
-    no_restriction_phrases = {"", "no", "none", "nope", "naw", "nah", "n/a", "none!", "nope!"}
-    if text in no_restriction_phrases:
-        logger.debug(f"[{original}] → No restriction (matched no-restriction phrase)")
-        return None
-
-    exclusions = set()
-    matched_terms = []
-
-    keyword_map = {
-        "vegetarian": {"MEAT", "FISH", "SHELLFISH"},
-        "vegan": {"ANIMAL_PRODUCTS"},
-        "pescatarian": {"MEAT"},
-        "dairy": {"DAIRY"},
-        "lactose": {"DAIRY"},
-        "milk": {"DAIRY"},
-        "cheese": {"DAIRY"},
-        "egg": {"EGGS"},
-        "eggs": {"EGGS"},
-        "beef": {"MEAT"},
-        "meat": {"MEAT"},
-        "fish": {"FISH"},
-        "shellfish": {"SHELLFISH"},
-        "nut": {"NUTS"},
-        "nuts": {"NUTS"},
-        "peanut": {"NUTS"},
-        "tree nut": {"NUTS"},
-        "gluten": {"GLUTEN"},
+    debug = {
+        "input": original,
+        "normalized": text,
+        "matched_terms": [],
+        "exclusions": set(),
+        "fuzzy_matches": [],
+        "score": 0.0,
     }
 
-    for word, exclusion_set in keyword_map.items():
+    if text in NO_RESTRICTION_PHRASES:
+        debug["reason"] = "Matched known unrestricted phrase"
+        result = None
+        if return_debug:
+            return result, debug
+        return result
+
+    exclusions = set()
+
+    for word, ex_set in KEYWORD_MAP.items():
         if word in text:
-            exclusions |= exclusion_set
-            matched_terms.append(word)
+            exclusions |= ex_set
+            debug["matched_terms"].append(word)
 
-    if exclusions:
-        logger.debug(
-            f"[{original}] → Exclusions: {sorted(exclusions)} "
-            f"(matched: {matched_terms}, score={len(matched_terms) / len(keyword_map):.3f})"
-        )
-        return DietaryRestriction(exclusions)
+    tokens = text.replace(',', ' ').replace(';', ' ').split()
+    for token in tokens:
+        match, score, _ = process.extractOne(token, KEYWORD_MAP.keys())
+        if score >= fuzz_threshold:
+            exclusions |= KEYWORD_MAP[match]
+            debug["fuzzy_matches"].append((token, match, score))
 
-    logger.debug(f"[{original}] → No restriction (no keyword match)")
-    return None
+    debug["exclusions"] = sorted(exclusions)
+    debug["score"] = (len(debug["matched_terms"]) + len(debug["fuzzy_matches"])) / len(KEYWORD_MAP)
+    debug["reason"] = (
+        "Matched exclusions via keyword and/or fuzzy matching" if exclusions
+        else "No exclusions matched"
+    )
+
+    result = DietaryRestriction(exclusions) if exclusions else None
+
+    if result:
+        logger.debug(f"[{original}] → {debug['exclusions']} (terms: {debug['matched_terms']}, fuzz: {debug['fuzzy_matches']})")
+    else:
+        logger.debug(f"[{original}] → No restriction")
+
+    return (result, debug) if return_debug else result
 
 
 # ------------------------------
