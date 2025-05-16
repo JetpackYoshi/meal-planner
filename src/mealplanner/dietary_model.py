@@ -227,6 +227,58 @@ class Tag:
     def __repr__(self):
         return f"Tag({self.name}, category={self.category})"
 
+# -----------------------------------
+# Utility: parse_freeform_restriction
+# -----------------------------------
+def parse_freeform_restriction(text: str) -> DietaryRestriction | None:
+    """
+    Attempts to interpret a freeform dietary restriction string.
+
+    Parameters
+    ----------
+    text : str
+        Freeform user-entered text.
+
+    Returns
+    -------
+    DietaryRestriction or None
+        Parsed restriction object, or None if unrestricted.
+    """
+    text = text.strip().lower()
+
+    # Common no-restriction phrases
+    if text in {"", "no", "none", "nope", "naw", "nah", "n/a", "none!", "nope!"}:
+        return None
+
+    exclusions = set()
+
+    # Keyword mapping
+    keyword_map = {
+        "vegetarian": {"MEAT", "FISH", "SHELLFISH"},
+        "vegan": {"ANIMAL_PRODUCTS"},
+        "pescatarian": {"MEAT"},
+        "dairy": {"DAIRY"},
+        "lactose": {"DAIRY"},
+        "milk": {"DAIRY"},
+        "cheese": {"DAIRY"},
+        "egg": {"EGGS"},
+        "beef": {"MEAT"},
+        "meat": {"MEAT"},
+        "fish": {"FISH"},
+        "shellfish": {"SHELLFISH"},
+        "nut": {"NUTS"},
+        "peanut": {"NUTS"},
+        "tree nut": {"NUTS"},
+        "gluten": {"GLUTEN"},
+    }
+
+    for word, exclusion_set in keyword_map.items():
+        if word in text:
+            exclusions |= exclusion_set
+
+    return DietaryRestriction(exclusions) if exclusions else None
+
+
 # ------------------------------
 # TagRegistry
 # ------------------------------
