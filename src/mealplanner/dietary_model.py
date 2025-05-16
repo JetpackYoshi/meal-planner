@@ -1,6 +1,10 @@
 import pandas as pd
 from collections import OrderedDict
 from typing import Literal
+import logging
+
+logger = logging.getLogger("diet_parser")
+logger.setLevel(logging.DEBUG)
 
 # ------------------------------
 # FoodCategory
@@ -232,27 +236,29 @@ class Tag:
 # -----------------------------------
 def parse_freeform_restriction(text: str) -> DietaryRestriction | None:
     """
-    Attempts to interpret a freeform dietary restriction string.
+    Parses a freeform dietary restriction string using rule-based matching.
 
     Parameters
     ----------
     text : str
-        Freeform user-entered text.
+        Raw user input describing dietary restrictions.
 
     Returns
     -------
     DietaryRestriction or None
-        Parsed restriction object, or None if unrestricted.
+        The parsed restriction object, or None if no restriction is inferred.
     """
+    original = text
     text = text.strip().lower()
 
-    # Common no-restriction phrases
-    if text in {"", "no", "none", "nope", "naw", "nah", "n/a", "none!", "nope!"}:
+    no_restriction_phrases = {"", "no", "none", "nope", "naw", "nah", "n/a", "none!", "nope!"}
+    if text in no_restriction_phrases:
+        logger.debug(f"[{original}] → No restriction (matched no-restriction phrase)")
         return None
 
     exclusions = set()
+    matched_terms = []
 
-    # Keyword mapping
     keyword_map = {
         "vegetarian": {"MEAT", "FISH", "SHELLFISH"},
         "vegan": {"ANIMAL_PRODUCTS"},
@@ -262,11 +268,13 @@ def parse_freeform_restriction(text: str) -> DietaryRestriction | None:
         "milk": {"DAIRY"},
         "cheese": {"DAIRY"},
         "egg": {"EGGS"},
+        "eggs": {"EGGS"},
         "beef": {"MEAT"},
         "meat": {"MEAT"},
         "fish": {"FISH"},
         "shellfish": {"SHELLFISH"},
         "nut": {"NUTS"},
+        "nuts": {"NUTS"},
         "peanut": {"NUTS"},
         "tree nut": {"NUTS"},
         "gluten": {"GLUTEN"},
@@ -275,8 +283,17 @@ def parse_freeform_restriction(text: str) -> DietaryRestriction | None:
     for word, exclusion_set in keyword_map.items():
         if word in text:
             exclusions |= exclusion_set
+            matched_terms.append(word)
 
-    return DietaryRestriction(exclusions) if exclusions else None
+    if exclusions:
+        logger.debug(
+            f"[{original}] → Exclusions: {sorted(exclusions)} "
+            f"(matched: {matched_terms}, score={len(matched_terms) / len(keyword_map):.3f})"
+        )
+        return DietaryRestriction(exclusions)
+
+    logger.debug(f"[{original}] → No restriction (no keyword match)")
+    return None
 
 
 # ------------------------------
