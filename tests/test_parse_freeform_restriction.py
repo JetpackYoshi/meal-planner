@@ -10,6 +10,7 @@ import pandas as pd
     ("Vegetarian", {"MEAT", "FISH", "SHELLFISH"}),
     ("vegan", {"ANIMAL_PRODUCTS"}),
     ("nut allergy", {"NUTS"}),
+    ("I don't eat peenuts", {"NUTS"}),
     ("I am lactose intolerant", {"DAIRY"}),
     ("I don't eat meat or fish", {"MEAT", "FISH"}),
     ("gluten free", {"GLUTEN"}),

@@ -29,6 +29,7 @@ KEYWORD_MAP = {
     "nut": {"NUTS"},
     "nuts": {"NUTS"},
     "peanut": {"NUTS"},
+    "peanuts": {"NUTS"},
     "tree nut": {"NUTS"},
     "gluten": {"GLUTEN"},
 }
@@ -41,7 +42,7 @@ NO_RESTRICTION_PHRASES = {
 def parse_freeform_restriction(
     text: str,
     *,
-    fuzz_threshold: int = 85,
+    fuzz_threshold: int = 75,
     return_debug: bool = False
     ):
     """
