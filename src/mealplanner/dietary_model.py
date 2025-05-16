@@ -203,6 +203,13 @@ def categorize_from_string(ingredient_name: str) -> FoodCategory:
     ------
     ValueError
         If no category match is found.
+        
+    Examples
+    --------
+    >>> categorize_from_string("roast beef")
+    FoodCategory('BEEF')
+    >>> categorize_from_string("cheddar cheese")
+    FoodCategory('CHEESE')
     """
     name = ingredient_name.strip().upper()
     for category in FoodCategory.all():
@@ -227,6 +234,17 @@ class TagRegistry:
     """
     Registry to manage canonical dietary tags.
     Tags are prioritized by registration order.
+    
+    Examples
+    --------
+    >>> tag_registry = TagRegistry()
+    >>> tag_registry.register_tag("VEGAN", DietaryRestriction({"ANIMAL_PRODUCTS"}), category="ethical")
+    >>> tag_registry.register_tag("NUT-FREE", DietaryRestriction({"NUTS"}), category="allergen")
+    >>> tag_registry.generate_tags(DietaryRestriction({"ANIMAL_PRODUCTS", "NUTS"}))
+    ['VEGAN', 'NUT-FREE']
+
+    >>> tag_registry.get_tags_by_category("ethical")
+    ['VEGAN']
     """
     def __init__(self):
         self._tag_map: OrderedDict[str, Tag] = OrderedDict()
@@ -254,6 +272,12 @@ class TagRegistry:
         -------
         list of str
             The best-fitting tags to describe the restriction.
+            
+        Examples
+        --------
+        >>> r = DietaryRestriction({"MEAT", "DAIRY"})
+        >>> tag_registry.generate_tags(r)
+        ['MEAT-FREE', 'DAIRY-FREE']  # Assuming these are registered
         """
         normalized = restriction.excluded
 
@@ -299,6 +323,11 @@ class TagRegistry:
         -------
         list of str
             Tag names in the given category
+            
+        Examples
+        --------
+        >>> tag_registry.get_tags_by_category("ethical")
+        ['VEGAN', 'VEGETARIAN']
         """
         return [tag.name for tag in self._tag_map.values() if tag.category == category.lower()]
 
