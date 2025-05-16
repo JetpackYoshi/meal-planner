@@ -2,8 +2,6 @@ import pandas as pd
 from collections import OrderedDict
 from typing import Literal
 import logging
-from rapidfuzz import process, fuzz
-import re
 
 # ------------------------------
 # FoodCategory
