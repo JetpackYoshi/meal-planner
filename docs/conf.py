@@ -21,7 +21,19 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx_autodoc_typehints',
+    'nbsphinx',
 ]
+
+# Configure nbsphinx to find notebooks in examples directory
+nbsphinx_allow_directives = True
+nbsphinx_kernel_name = 'python3'
+
+# Add paths for finding source files
+import shutil
+examples_dir = os.path.abspath('../examples')
+if os.path.exists('feature_overview.ipynb'):
+    os.remove('feature_overview.ipynb')
+shutil.copy2(os.path.join(examples_dir, 'feature_overview.ipynb'), 'feature_overview.ipynb')
 
 autodoc_default_options = {
     'members': True,
@@ -31,8 +43,6 @@ autodoc_default_options = {
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
-
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

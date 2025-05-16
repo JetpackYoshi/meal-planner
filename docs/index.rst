@@ -10,10 +10,7 @@ Welcome to meal-planner's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-API Reference
--------------
+   readme
+   feature_overview
+   api_docs
 
-.. automodule:: mealplanner.dietary_model
-   :members:
-   :undoc-members:
-   :show-inheritance:
