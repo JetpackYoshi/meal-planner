@@ -21,7 +21,7 @@ A flexible Python framework for modeling food categories, dietary restrictions, 
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/yourusername/meal-planner.git
+git clone https://github.com/JetpackYoshi/meal-planner.git
 cd meal-planner
 pip install -e .
 ```
@@ -95,24 +95,6 @@ Tests are located in the `tests/` directory and use `pytest`:
 
 ```bash
 pytest
-```
-
----
-
-## Project Structure
-
-```
-meal-planner/
-├── src/
-│   └── mealplanner/
-│       ├── __init__.py
-│       └── dietary_model.py
-├── tests/
-│   └── test_dietary_model.py
-├── docs/
-│   └── index.rst
-├── setup.py
-└── README.md
 ```
 
 ---
