@@ -57,6 +57,33 @@ pip install -e .
 
 ---
 
+## Documentation
+
+The documentation is available in two formats:
+
+1. **Online Documentation:**  
+   Visit [https://jetpackyoshi.github.io/meal-planner/](https://jetpackyoshi.github.io/meal-planner/) for the latest documentation.
+
+2. **Local Documentation:**  
+   Build the documentation locally:
+   ```bash
+   cd docs
+   pip install -r ../requirements-dev.txt
+   make html
+   ```
+   Then open `_build/html/index.html` in your browser.
+
+The documentation includes:
+- Complete API reference
+- Step-by-step tutorial
+- Natural language parsing guide
+- Interactive examples
+- Best practices and troubleshooting
+
+Documentation is automatically built and deployed on each push to the main branch.
+
+---
+
 ## Usage
 
 ### 1. Define Food Categories
@@ -134,17 +161,6 @@ restriction = parse_freeform_restriction("vegetarian and dairy free")
 ### 7. Explore Interactive Examples
 
 See [`examples/feature_overview.ipynb`](examples/feature_overview.ipynb) for a full workflow, including visualization and advanced features.
-
----
-
-## Documentation
-
-- **API Reference:** See the [docs/index.rst](docs/index.rst) or build the Sphinx documentation:
-  ```bash
-  cd docs
-  make html
-  ```
-  Open `_build/html/index.html` in your browser.
 
 ---
 
