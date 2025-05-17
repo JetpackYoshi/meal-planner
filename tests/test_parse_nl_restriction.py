@@ -18,7 +18,7 @@ import pandas as pd
     ("shellfish & nuts", {"SHELLFISH", "NUTS"}),
 ])
 def test_parse_keywords(input_text, expected_exclusions):
-    restriction, debug = parse_freeform_restriction(input_text, return_debug=True)
+    restriction, debug = parse_nl_restriction(input_text, return_debug=True)
     if expected_exclusions is None:
         assert restriction is None
     else:
@@ -33,8 +33,8 @@ def test_parse_keywords(input_text, expected_exclusions):
 ])
 def test_fuzzy_matching(input_text, fuzzy_term, expected_category):
     # Use lower threshold to allow more typo tolerance
-    restriction, debug = parse_freeform_restriction(input_text, return_debug=True, fuzz_threshold=80)
-    restriction, debug = parse_freeform_restriction(input_text, return_debug=True)
+    restriction, debug = parse_nl_restriction(input_text, return_debug=True, fuzz_threshold=80)
+    restriction, debug = parse_nl_restriction(input_text, return_debug=True)
     assert restriction is not None
     assert expected_category.issubset(restriction.excluded)
     assert any(fuzzy_term in m for (_, m, _) in debug["fuzzy_matches"])
@@ -44,8 +44,8 @@ def test_fuzzy_matching(input_text, fuzzy_term, expected_category):
 ])
 def test_non_matching_edge_cases(input_text):
     # Expanded unrestricted phrases should now capture these
-    restriction, debug = parse_freeform_restriction(input_text, return_debug=True, fuzz_threshold=80)
-    restriction, debug = parse_freeform_restriction(input_text, return_debug=True)
+    restriction, debug = parse_nl_restriction(input_text, return_debug=True, fuzz_threshold=80)
+    restriction, debug = parse_nl_restriction(input_text, return_debug=True)
     assert restriction is None
     assert debug["exclusions"] == []
 
@@ -64,7 +64,7 @@ def test_integration_from_sample_table():
     df = pd.DataFrame(data)
 
     # Evaluate restrictions
-    results = [parse_freeform_restriction(r, return_debug=True) for r in df["Restrictions"]]
+    results = [parse_nl_restriction(r, return_debug=True) for r in df["Restrictions"]]
 
     assert results[0][0] is not None
     assert {"DAIRY", "MEAT", "FISH", "SHELLFISH"}.issubset(results[0][0].excluded)

@@ -39,14 +39,14 @@ NO_RESTRICTION_PHRASES = {
     "i can eat anything", "i can eat everything", "everything is fine", "i eat everything"
 }
 
-def parse_freeform_restriction(
+def parse_nl_restriction(
     text: str,
     *,
     fuzz_threshold: int = 75,
     return_debug: bool = False
     ):
     """
-    Parses a freeform dietary restriction string with optional fuzzy matching and debug metadata.
+    Parses a freeform (natural language) dietary restriction string with optional fuzzy matching and debug metadata.
 
     Parameters
     ----------
