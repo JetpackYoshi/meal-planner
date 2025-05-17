@@ -12,6 +12,7 @@ Welcome to meal-planner's documentation!
 
    readme
    tutorial
+   natural_language
    feature_overview
    api_docs
 

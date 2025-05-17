@@ -4,7 +4,7 @@ Tutorial
 This tutorial will guide you through using the Meal Planner framework to model dietary restrictions, create meals, and analyze meal compatibility for groups of people with different dietary needs.
 
 Installation
------------
+------------
 
 First, install the package::
 
@@ -13,7 +13,7 @@ First, install the package::
     pip install -e .
 
 Basic Concepts
--------------
+--------------
 
 The Meal Planner framework is built around several key concepts:
 
@@ -25,10 +25,10 @@ The Meal Planner framework is built around several key concepts:
 6. **Tags**: Pre-defined common dietary restrictions
 
 Step-by-Step Guide
------------------
+------------------
 
 1. Setting Up Food Categories
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 First, let's set up a basic food category hierarchy::
 
@@ -59,7 +59,7 @@ You can check category relationships::
     print(dairy.ancestors())  # {'ANIMAL_PRODUCTS'}
 
 2. Creating Dietary Tags
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Register common dietary restrictions as tags::
 
@@ -88,7 +88,7 @@ Register common dietary restrictions as tags::
     )
 
 3. Creating Ingredients
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~  
 
 Create ingredients with their categories and metadata::
 
@@ -115,7 +115,7 @@ Create ingredients with their categories and metadata::
     )
 
 4. Creating Meals
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 Combine ingredients into meals::
 
@@ -134,7 +134,7 @@ Combine ingredients into meals::
     )
 
 5. Defining People with Dietary Needs
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Create profiles for people with different dietary restrictions::
 
@@ -149,7 +149,7 @@ Create profiles for people with different dietary restrictions::
     allergic_person = Person("Sam", restriction=custom_restriction)
 
 6. Analyzing Meal Compatibility
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Analyze which meals are suitable for which people::
 
@@ -173,7 +173,7 @@ Analyze which meals are suitable for which people::
     print(analyzer.get_universally_compatible_meals())
 
 7. Using Natural Language Parsing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Parse freeform dietary restrictions::
 
@@ -191,10 +191,10 @@ Parse freeform dietary restrictions::
     print(f"Debug info: {debug_info}")
 
 Advanced Usage
--------------
+--------------
 
 1. Custom Food Categories
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can create custom food category hierarchies for specific needs::
 
@@ -205,7 +205,7 @@ You can create custom food category hierarchies for specific needs::
     FoodCategory.define("CHINESE", {"ASIAN"})
 
 2. Complex Dietary Restrictions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Combine multiple restrictions::
 
@@ -215,7 +215,7 @@ Combine multiple restrictions::
     )
 
 3. Meal Analysis and Export
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Export compatibility analysis::
 
@@ -226,7 +226,7 @@ Export compatibility analysis::
     analyzer.export_markdown("meal_compatibility.md")
 
 Best Practices
--------------
+--------------
 
 1. **Food Categories**:
    - Create a clear hierarchy
@@ -254,7 +254,7 @@ Best Practices
    - Review universally compatible meals
 
 Troubleshooting
---------------
+---------------
 
 Common Issues and Solutions:
 
