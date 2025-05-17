@@ -1,0 +1,144 @@
+/* Custom styles for Read the Docs theme */
+
+/* Improve code block readability */
+.highlight {
+    background: #f5f5f5;
+    border-radius: 4px;
+}
+
+.highlight pre {
+    padding: 12px 15px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* Better typography */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+}
+
+/* Improve table readability */
+table.docutils {
+    border: 1px solid #e1e4e5;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    width: 100%;
+}
+
+table.docutils td, table.docutils th {
+    padding: 8px 16px;
+    border: 1px solid #e1e4e5;
+}
+
+table.docutils th {
+    background-color: #f3f6f6;
+}
+
+/* Better admonitions */
+.admonition {
+    padding: 12px;
+    margin-bottom: 24px;
+    border-radius: 4px;
+}
+
+.admonition-title {
+    margin: -12px -12px 12px -12px;
+    padding: 6px 12px;
+    font-weight: 600;
+    border-radius: 4px 4px 0 0;
+}
+
+/* Improve sidebar navigation */
+.wy-menu-vertical li.current > a {
+    background-color: #f3f6f6;
+    border-right: 2px solid #2980b9;
+}
+
+.wy-menu-vertical li.current > a:hover {
+    background-color: #e5ebeb;
+}
+
+/* Better code highlighting */
+.highlight .hll {
+    background-color: #ffc;
+}
+
+.highlight .c1 {
+    color: #998;
+    font-style: italic;
+}
+
+.highlight .k {
+    color: #000;
+    font-weight: bold;
+}
+
+.highlight .s {
+    color: #d14;
+}
+
+/* Improve inline code */
+code.literal {
+    background: #f5f5f5;
+    border: 1px solid #e1e4e5;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+/* Better spacing for lists */
+.rst-content .section ul,
+.rst-content .section ol {
+    margin-bottom: 24px;
+}
+
+.rst-content .section ul li,
+.rst-content .section ol li {
+    margin-bottom: 12px;
+}
+
+/* Improve note boxes */
+.note {
+    background: #edf2f7;
+    border-left: 4px solid #2980b9;
+}
+
+.warning {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+.important {
+    background: #f8d7da;
+    border-left: 4px solid #dc3545;
+}
+
+/* Better API documentation styling */
+dl.class, dl.function, dl.method {
+    padding: 15px;
+    border: 1px solid #e1e4e5;
+    margin: 24px 0;
+    border-radius: 4px;
+}
+
+dl.class dt, dl.function dt, dl.method dt {
+    background: #f3f6f6;
+    padding: 10px;
+    margin: -15px -15px 15px -15px;
+    border-radius: 4px 4px 0 0;
+}
+
+/* Improve search box */
+.wy-side-nav-search input[type="text"] {
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 16px;
+} 

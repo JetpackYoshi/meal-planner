@@ -11,6 +11,7 @@ Welcome to meal-planner's documentation!
    :caption: Contents:
 
    readme
+   tutorial
    feature_overview
    api_docs
 

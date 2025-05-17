@@ -7,6 +7,7 @@ sphinx>=8.0.0
 sphinx-autodoc-typehints>=3.0.0
 nbsphinx>=0.9.0
 jupyter>=1.0.0
+sphinx-rtd-theme>=2.0.0
 
 # Development Tools
 lark>=1.0.0
