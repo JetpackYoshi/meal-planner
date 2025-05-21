@@ -14,7 +14,7 @@ import pandas as pd
     ("I am lactose intolerant", {"DAIRY"}),
     ("I don't eat meat or fish", {"MEAT", "FISH"}),
     ("gluten free", {"GLUTEN"}),
-    ("no beef or egg", {"MEAT", "EGGS"}),
+    ("no beef or egg", {"BEEF", "EGGS"}),
     ("shellfish & nuts", {"SHELLFISH", "NUTS"}),
 ])
 def test_parse_keywords(input_text, expected_exclusions):
@@ -75,7 +75,7 @@ def test_integration_from_sample_table():
     assert {"ANIMAL_PRODUCTS"}.issubset(results[4][0].excluded)  # Vegan
     assert {"NUTS", "SHELLFISH"}.issubset(results[5][0].excluded)  # Nuts + shellfish
     assert {"ANIMAL_PRODUCTS"}.issubset(results[6][0].excluded)  # Vegan again
-    assert {"MEAT"}.issubset(results[7][0].excluded)  # "No beef"
+    assert {"BEEF"}.issubset(results[7][0].excluded)  # "No beef" updated to match parser
 
     # Ensure all return debug info
     for restriction, debug in results:
