@@ -70,7 +70,7 @@ def setup_default_food_categories():
 
 def setup_default_tags():
     """Sets up the default dietary tags."""
-    tag_registry._tag_map.clear()
+    tag_registry.clear()
     
     # Ethical dietary tags
     tag_registry.register_tag("VEGAN", DietaryRestriction({"ANIMAL_PRODUCTS"}), category="ethical")

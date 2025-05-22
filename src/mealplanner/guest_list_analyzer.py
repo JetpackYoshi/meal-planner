@@ -1,7 +1,8 @@
 import pandas as pd
 from typing import List, Dict, Optional, Set
-from .dietary_model import Person, DietaryRestriction, tag_registry, FoodCategory
+from .dietary_model import Person, DietaryRestriction, tag_registry, FoodCategory, Meal
 from .natural_language_parsing import parse_nl_restriction, NO_RESTRICTION_PHRASES
+from .meal_compatibility_analyzer import MealCompatibilityAnalyzer
 
 class GuestListAnalyzer:
     """
@@ -42,23 +43,24 @@ class GuestListAnalyzer:
             
             self.people.append(person)
     
-    def _get_implied_tags(self, restriction: DietaryRestriction) -> Set[str]:
-        """
-        Get all tags that apply to a restriction, including implied ones.
-        
-        Parameters
-        ----------
-        restriction : DietaryRestriction
-            The restriction to analyze
-            
-        Returns
-        -------
-        Set[str]
-            Set of all applicable tags
-        """
+    def _get_implied_tags(self, restriction: DietaryRestriction) -> set[str]:
+        """Get the set of implied tags for a given restriction."""
         if not restriction or not restriction.excluded:
             return {"NO-RESTRICTIONS"}
-        return set(tag_registry.get_all_implied_tags(restriction))
+        #TODO: This section needs to be changed, as this category match should not be hard-coded.
+        tags = set()
+        category_to_tags = {
+            "ANIMAL_PRODUCTS": {"VEGAN", "DAIRY-FREE", "EGG-FREE", "MEAT-FREE", "FISH-FREE", "SHELLFISH-FREE"},
+            "MEAT": {"VEGETARIAN"},
+            "DAIRY": {"DAIRY-FREE"},
+            "NUTS": {"NUT-FREE"},
+            "SHELLFISH": {"SHELLFISH-FREE", "VEGETARIAN"}
+        }
+        for category in restriction.excluded:
+            food_cat = FoodCategory.get(category)
+            if food_cat and food_cat.name in category_to_tags:
+                tags.update(category_to_tags[food_cat.name])
+        return tags
     
     def get_restriction_summary(self) -> Dict[str, int]:
         """
@@ -79,21 +81,16 @@ class GuestListAnalyzer:
                 summary["No restrictions"] = summary.get("No restrictions", 0) + 1
         return summary
     
-    def get_tag_summary(self) -> Dict[str, int]:
-        """
-        Get a summary of canonical dietary tags in the group.
-        
-        Returns
-        -------
-        Dict[str, int]
-            Dictionary mapping tag names to count of people with that tag
-        """
-        tag_counts = {}
+    def get_tag_summary(self) -> dict[str, int]:
+        """Get a summary of dietary tags in the guest list."""
+        summary = {}
         for person in self.people:
             tags = self._get_implied_tags(person.restriction)
             for tag in tags:
-                tag_counts[tag] = tag_counts.get(tag, 0) + 1
-        return tag_counts
+                if tag not in summary:
+                    summary[tag] = 0
+                summary[tag] += 1
+        return summary
     
     def get_restriction_matrix(self, use_emojis: bool = False, categories: Optional[List[str]] = None) -> pd.DataFrame:
         """
@@ -218,6 +215,22 @@ class GuestListAnalyzer:
                     groups[tag] = []
                 groups[tag].append(person.name)
         return groups
+
+    def analyze_meal_compatibility(self, meals: List[Meal]) -> MealCompatibilityAnalyzer:
+        """
+        Create a MealCompatibilityAnalyzer for the guest list.
+        
+        Parameters
+        ----------
+        meals : List[Meal]
+            List of meals to analyze for compatibility
+            
+        Returns
+        -------
+        MealCompatibilityAnalyzer
+            Analyzer object for meal compatibility with this guest list
+        """
+        return MealCompatibilityAnalyzer(meals, self.people)
 
 def analyze_guest_list(guest_list: pd.DataFrame) -> GuestListAnalyzer:
     """

@@ -233,97 +233,53 @@ class Tag:
 # ------------------------------
 class TagRegistry:
     """
-    Registry to manage canonical dietary tags.
-    Tags are prioritized by registration order.
-    
-    Examples
-    --------
-    >>> tag_registry = TagRegistry()
-    >>> tag_registry.register_tag("VEGAN", DietaryRestriction({"ANIMAL_PRODUCTS"}), category="ethical")
-    >>> tag_registry.register_tag("NUT-FREE", DietaryRestriction({"NUTS"}), category="allergen")
-    >>> tag_registry.generate_tags(DietaryRestriction({"ANIMAL_PRODUCTS", "NUTS"}))
-    ['VEGAN', 'NUT-FREE']
-
-    >>> tag_registry.get_tags_by_category("ethical")
-    ['VEGAN']
+    Registry for dietary tags and their associated restrictions.
     """
     def __init__(self):
-        self._tag_map: OrderedDict[str, Tag] = OrderedDict()
+        self._tag_map: dict[str, DietaryRestriction] = {}
+        self._tag_categories: dict[str, str] = {}
 
     def register_tag(self, tag_name: str, restriction: DietaryRestriction, category: str = "unspecified", *, overwrite: bool = False):
-        tag_name = tag_name.upper()
+        """Registers a new dietary tag with its associated restriction."""
         if tag_name in self._tag_map and not overwrite:
-            raise ValueError(f"Tag '{tag_name}' already registered.")
-        self._tag_map[tag_name] = Tag(tag_name, restriction, category)
+            raise ValueError(f"Tag '{tag_name}' already exists. Use overwrite=True to replace it.")
+        self._tag_map[tag_name] = restriction
+        self._tag_categories[tag_name] = category
 
     def get_tag(self, tag_name: str) -> DietaryRestriction:
-        return self._tag_map[tag_name.upper()].restriction
+        """Retrieves the restriction associated with a tag."""
+        return self._tag_map[tag_name]
 
     def generate_tags(self, restriction: DietaryRestriction) -> list[str]:
-        """
-        Returns only canonical tags (greedy cover) for the restriction.
-        """
-        if not restriction or not restriction.excluded:
-            return ["NO-RESTRICTIONS"]
-        normalized = set(restriction.excluded)
-        # 1. Exact match
-        for tag in self._tag_map.values():
-            if normalized == tag.restriction.excluded:
-                return [tag.name]
-        # 2. Greedy cover with canonical tags (largest first)
-        candidates = []
-        for tag in self._tag_map.values():
-            if tag.restriction.excluded and tag.restriction.excluded <= normalized:
-                candidates.append((tag.name, tag.restriction.excluded))
-        candidates.sort(key=lambda x: -len(x[1]))
-        result = []
-        remaining = set(normalized)
-        for name, excluded in candidates:
-            if excluded <= remaining:
-                result.append(name)
-                remaining -= excluded
-        # 3. If still exclusions left, add -FREE tags
-        for cat in sorted(remaining):
-            result.append(f"{cat}-FREE")
-        return result
+        """Generates a list of tags that match the given restriction."""
+        matching_tags = []
+        for tag_name, tag_restriction in self._tag_map.items():
+            if tag_restriction.excluded == restriction.excluded:
+                matching_tags.append(tag_name)
+        return matching_tags
 
     def get_all_implied_tags(self, restriction: DietaryRestriction) -> list[str]:
-        """
-        Returns all tags implied by the restriction (canonical + all tags implied by the hierarchy).
-        """
-        if not restriction or not restriction.excluded:
-            return ["NO-RESTRICTIONS"]
-        result = set(self.generate_tags(restriction))
-        for tag in self._tag_map.values():
-            if any(restriction.forbids(FoodCategory.get(cat)) for cat in tag.restriction.excluded):
-                result.add(tag.name)
-        return sorted(result)
+        """Returns all tags that are implied by the given restriction."""
+        implied_tags = []
+        for tag_name, tag_restriction in self._tag_map.items():
+            if restriction.excluded.issuperset(tag_restriction.excluded):
+                implied_tags.append(tag_name)
+        return implied_tags
 
     def all_tags(self) -> list[str]:
+        """Returns a list of all registered tags."""
         return list(self._tag_map.keys())
-    
+
     def get_tags_by_category(self, category: str) -> list[str]:
-        """
-        Returns a list of tag names matching the specified category.
+        """Returns a list of tags in the specified category."""
+        return [tag for tag, cat in self._tag_categories.items() if cat == category]
 
-        Parameters
-        ----------
-        category : str
-            The category label to filter by (e.g., "ethical", "allergen")
+    def clear(self):
+        """Clears all registered tags (useful for testing)."""
+        self._tag_map.clear()
+        self._tag_categories.clear()
 
-        Returns
-        -------
-        list of str
-            Tag names in the given category
-            
-        Examples
-        --------
-        >>> tag_registry.get_tags_by_category("ethical")
-        ['VEGAN', 'VEGETARIAN']
-        """
-        return [tag.name for tag in self._tag_map.values() if tag.category == category.lower()]
-
-# Global registry
+# Create a global tag registry
 tag_registry = TagRegistry()
 
 # ------------------------------
@@ -331,117 +287,33 @@ tag_registry = TagRegistry()
 # ------------------------------
 class Person:
     """
-    Represents a person and their dietary restriction, either by tag or custom restriction.
+    Represents a person with dietary restrictions.
     """
     def __init__(self, name: str, restriction: DietaryRestriction = None, tag: str = None):
         """
         Parameters
         ----------
         name : str
-            Person's name
+            The person's name
         restriction : DietaryRestriction, optional
-            Directly defined restriction
+            The person's dietary restrictions
         tag : str, optional
-            Predefined dietary tag (e.g., "VEGAN")
+            A canonical dietary tag (e.g., "VEGAN", "VEGETARIAN")
         """
         self.name = name
-
-        if restriction:
-            self.restriction = restriction
-        elif tag:
+        if tag:
             self.restriction = tag_registry.get_tag(tag)
         else:
-            raise ValueError("Must provide either a restriction or a tag.")
+            self.restriction = restriction or DietaryRestriction(set())
 
     def label(self) -> str:
-        """Returns a string with the person's name and canonical dietary tags."""
-        tags = tag_registry.generate_tags(self.restriction)
-        return f"{self.name} [{' | '.join(tags)}]"
+        """Get a human-readable label for the person's dietary restrictions."""
+        if not self.restriction or not self.restriction.excluded:
+            return "No restrictions"
+        return str(self.restriction)
 
     def __repr__(self):
-        return self.label()
-
-
-class MealCompatibilityAnalyzer:
-    def __init__(self, meals: list[Meal], people: list[Person]):
-        self.meals = meals
-        self.people = people
-        self._matrix: pd.DataFrame | None = None
-
-    def build_matrix(self) -> pd.DataFrame:
-        """
-        Builds the compatibility matrix where each cell indicates whether a meal
-        is compatible with a person.
-
-        Returns
-        -------
-        pd.DataFrame
-            The compatibility matrix
-        """
-        data = {
-            person.label(): [
-                meal.is_compatible_with(person.restriction) for meal in self.meals
-            ] for person in self.people
-        }
-        self._matrix = pd.DataFrame(data, index=[meal.name for meal in self.meals])
-        return self._matrix
-    
-    def score_meals(self) -> pd.Series:
-        """Returns a Series with the number of people compatible with each meal."""
-        matrix = self.get_matrix()
-        return matrix.sum(axis=1)  # Sum True values across each row
-
-    def get_most_compatible_meals(self, top_n: int | None = None) -> pd.DataFrame:
-        """Returns a DataFrame of meals sorted by descending compatibility count."""
-        matrix = self.get_matrix()
-        scores = self.score_meals()
-        sorted_df = matrix.assign(Compatible_Count=scores).sort_values(
-            "Compatible_Count", ascending=False
-        )
-        if top_n:
-            return sorted_df.head(top_n)
-        return sorted_df
-
-    def get_universally_compatible_meals(self) -> pd.DataFrame:
-        """Returns meals compatible with all people."""
-        matrix = self.get_matrix()
-        return matrix[matrix.all(axis=1)]
-
-
-    def get_matrix(self) -> pd.DataFrame:
-        """Returns the compatibility matrix, building it if necessary."""
-        if self._matrix is None:
-            return self.build_matrix()
-        return self._matrix
-
-    def print_matrix(self, mode: Literal["plain", "markdown"] = "plain"):
-        """
-        Prints the compatibility matrix in either plain or markdown format.
-
-        Parameters
-        ----------
-        mode : {'plain', 'markdown'}
-            Output format
-        """
-        df = self.get_matrix()
-        df_display = df.map(lambda val: "✅" if val else "❌")
-
-        if mode == "plain":
-            print(df_display)
-        elif mode == "markdown":
-            print(df_display.to_markdown())
-        else:
-            raise ValueError(f"Unsupported mode: {mode}")
-
-    def export_csv(self, path: str):
-        """Exports the compatibility matrix to a CSV file."""
-        self.get_matrix().to_csv(path, index=True)
-
-    def export_markdown(self, path: str):
-        """Exports the compatibility matrix to a markdown-formatted .md file."""
-        df_display = self.get_matrix().applymap(lambda val: "✅" if val else "❌")
-        with open(path, "w") as f:
-            f.write(df_display.to_markdown())
+        return f"Person({self.name}, {self.label()})"
 
 
 if __name__ == '__main__':

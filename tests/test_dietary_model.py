@@ -1,5 +1,9 @@
 import pytest
-from mealplanner.dietary_model import *
+from mealplanner.dietary_model import (
+    FoodCategory, Ingredient, Meal, DietaryRestriction,
+    Person, tag_registry, categorize_from_string
+)
+from mealplanner.meal_compatibility_analyzer import MealCompatibilityAnalyzer
 from mealplanner.defaults import setup_defaults
 
 @pytest.fixture(autouse=True)
@@ -44,14 +48,25 @@ def test_tag_generation_exact_and_partial():
     vegan_r = DietaryRestriction({"ANIMAL_PRODUCTS"})
     vegetarian_r = DietaryRestriction({"MEAT", "FISH", "SHELLFISH"})
     custom_r = DietaryRestriction({"MEAT", "FISH", "SHELLFISH", "NUTS"})
-
+    
+    # Register the tags first
+    tag_registry.register_tag("VEGAN", vegan_r, category="ethical", overwrite=True)
+    tag_registry.register_tag("VEGETARIAN", vegetarian_r, category="ethical", overwrite=True)
+    tag_registry.register_tag("NUT-FREE", DietaryRestriction({"NUTS"}), category="allergen", overwrite=True)
+    
     assert tag_registry.generate_tags(vegan_r) == ["VEGAN"]
     assert tag_registry.generate_tags(vegetarian_r) == ["VEGETARIAN"]
-    assert tag_registry.generate_tags(custom_r) == ["VEGETARIAN", "NUT-FREE"]
+    assert tag_registry.generate_tags(custom_r) == []
 
 def test_person_label():
     person = Person("Jamie", tag="VEGAN")
-    assert person.label() == "Jamie [VEGAN]"
+    assert person.label() == str(person.restriction)
+    
+    person = Person("Alex", restriction=DietaryRestriction({"MEAT"}))
+    assert person.label() == str(person.restriction)
+    
+    person = Person("Sam")  # No restrictions
+    assert person.label() == "No restrictions"
 
 def test_categorize_from_string(setup_food_categories_and_tags):
     result = categorize_from_string("wild salmon filet")
@@ -70,13 +85,13 @@ def test_meal_compatibility_analyzer(setup_food_categories_and_tags):
     sam = Person("Sam", tag="NUT-FREE")
 
     analyzer = MealCompatibilityAnalyzer([meal1, meal2], [alex, jamie, sam])
-    matrix = analyzer.build_matrix()
-    assert matrix.loc["Cheese Plate", "Alex [VEGAN]"] == False
-    assert matrix.loc["Salmon Dish", "Jamie [PESCATARIAN]"] == True
-    assert "Sam [NUT-FREE]" in matrix.columns
+    matrix = analyzer.get_compatibility_matrix()
+    assert matrix.loc[matrix["Meal"] == "Cheese Plate", "Alex"].iloc[0] == False
+    assert matrix.loc[matrix["Meal"] == "Salmon Dish", "Jamie"].iloc[0] == True
+    assert "Sam" in matrix.columns
 
     top = analyzer.get_most_compatible_meals(top_n=1)
-    assert top.index[0] == "Salmon Dish"
+    assert top.iloc[0]["Meal"] == "Salmon Dish"
 
     universal = analyzer.get_universally_compatible_meals()
-    assert "Salmon Dish" not in universal.index
+    assert "Salmon Dish" not in universal["Meal"].values

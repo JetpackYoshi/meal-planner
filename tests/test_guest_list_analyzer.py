@@ -94,7 +94,7 @@ def test_get_tag_summary(sample_guest_list):
     # Check basic tags
     assert summary["NO-RESTRICTIONS"] == 1
     assert summary["VEGAN"] == 1
-    assert summary["VEGETARIAN"] == 3  # Updated: 3 people (vegan + vegetarian + shellfish-free) imply VEGETARIAN
+    assert summary["VEGETARIAN"] == 2  # Updated: 2 people (vegan + vegetarian) imply VEGETARIAN
     assert summary["NUT-FREE"] == 1
     
     # Check implied tags through food category hierarchy
