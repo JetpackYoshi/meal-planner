@@ -1,29 +1,10 @@
 import pandas as pd
 from mealplanner.guest_list_analyzer import analyze_guest_list
 from mealplanner.dietary_model import tag_registry, DietaryRestriction, FoodCategory
+from mealplanner.defaults import setup_defaults
 
-# Reset and define food categories with proper hierarchy
-FoodCategory.reset()
-FoodCategory.define("ANIMAL_PRODUCTS")
-FoodCategory.define("MEAT", {"ANIMAL_PRODUCTS"})
-FoodCategory.define("DAIRY", {"ANIMAL_PRODUCTS"})
-FoodCategory.define("FISH", {"ANIMAL_PRODUCTS"})
-FoodCategory.define("SHELLFISH", {"FISH"})  # SHELLFISH is a subcategory of FISH
-FoodCategory.define("EGGS", {"ANIMAL_PRODUCTS"})
-FoodCategory.define("NUTS")
-FoodCategory.define("BEEF", {"MEAT"})
-
-# Initialize tag registry with common dietary tags
-tag_registry.register_tag("VEGAN", DietaryRestriction({"ANIMAL_PRODUCTS"}), category="ethical")
-tag_registry.register_tag("VEGETARIAN", DietaryRestriction({"MEAT", "FISH", "SHELLFISH"}), category="ethical")  # FISH includes SHELLFISH
-tag_registry.register_tag("PESCATARIAN", DietaryRestriction({"MEAT"}), category="ethical")
-tag_registry.register_tag("NUT-FREE", DietaryRestriction({"NUTS"}), category="allergen")
-tag_registry.register_tag("DAIRY-FREE", DietaryRestriction({"DAIRY"}), category="allergen")
-tag_registry.register_tag("EGG-FREE", DietaryRestriction({"EGGS"}), category="allergen")
-tag_registry.register_tag("SHELLFISH-FREE", DietaryRestriction({"SHELLFISH"}), category="allergen")
-tag_registry.register_tag("FISH-FREE", DietaryRestriction({"FISH"}), category="allergen")
-tag_registry.register_tag("MEAT-FREE", DietaryRestriction({"MEAT"}), category="ethical")
-tag_registry.register_tag("BEEF-FREE", DietaryRestriction({"BEEF"}), category="allergen")
+# Setup default food categories and tags
+setup_defaults()
 
 # Example guest list data
 guest_data = {
@@ -130,8 +111,15 @@ def main():
         for name in sorted(names):
             print(f"  - {name}")
     
-    print("\n=== Restriction Matrix (✅/❌) ===")
+    # Get and print restriction matrix with only relevant categories
+    print("\n=== Restriction Matrix (Relevant Categories) ===")
     matrix = analyzer.get_restriction_matrix(use_emojis=True)
+    print(matrix.to_string(index=False))
+    
+    # Get and print restriction matrix with specific categories
+    print("\n=== Restriction Matrix (Selected Categories) ===")
+    selected_categories = ["MEAT", "DAIRY", "EGGS", "FISH", "SHELLFISH", "NUTS"]
+    matrix = analyzer.get_restriction_matrix(use_emojis=True, categories=selected_categories)
     print(matrix.to_string(index=False))
 
 if __name__ == "__main__":

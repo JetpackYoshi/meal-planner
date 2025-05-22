@@ -95,32 +95,62 @@ class GuestListAnalyzer:
                 tag_counts[tag] = tag_counts.get(tag, 0) + 1
         return tag_counts
     
-    def get_restriction_matrix(self, use_emojis: bool = False) -> pd.DataFrame:
+    def get_restriction_matrix(self, use_emojis: bool = False, categories: Optional[List[str]] = None) -> pd.DataFrame:
         """
         Create a matrix showing which food categories each person can eat.
         True means they can eat it, False means they cannot.
+        
+        Parameters
+        ----------
+        use_emojis : bool, default=False
+            Whether to use emoji checkmarks/crosses (✅/❌) instead of True/False
+        categories : List[str], optional
+            List of specific categories to show. If None, shows only categories
+            that are relevant to the guest list (i.e., categories that are
+            restricted by at least one person).
+            
+        Returns
+        -------
+        pd.DataFrame
+            Matrix with people as rows and food categories as columns
         """
-        # Get all unique food categories from restrictions
-        all_categories = set()
-        for person in self.people:
-            if person.restriction and person.restriction.excluded:
-                all_categories.update(person.restriction.excluded)
-        # Expand to include all defined categories (for hierarchy)
-        all_categories = set(cat for cat in all_categories)
-        all_categories = sorted(all_categories | {cat.name for cat in tag_registry._tag_map.values() if hasattr(cat, 'name')})
-        # Actually, use all defined FoodCategories for a complete matrix
-        all_categories = sorted({cat.name for cat in FoodCategory.all()})
+        # Get categories to show
+        if categories is None:
+            # Get categories that are relevant to the guest list
+            relevant_categories = set()
+            for person in self.people:
+                if person.restriction and person.restriction.excluded:
+                    relevant_categories.update(person.restriction.excluded)
+            # Add parent categories of excluded categories
+            for category in list(relevant_categories):
+                cat = FoodCategory.get(category)
+                if cat and cat.parents:
+                    for p in cat.parents:
+                        if hasattr(p, 'name'):
+                            relevant_categories.add(p.name)
+                        else:
+                            relevant_categories.add(str(p))
+            categories = sorted(relevant_categories)
+        else:
+            # Validate provided categories
+            valid_categories = []
+            for cat in categories:
+                if FoodCategory.get(cat):
+                    valid_categories.append(cat)
+                else:
+                    print(f"Warning: Unknown category '{cat}' will be ignored")
+            categories = valid_categories
+        
         # Create the matrix
         matrix_data = []
         for person in self.people:
             row = {"Name": person.name}
-            for category in all_categories:
+            for category in categories:
                 food_cat = FoodCategory.get(category)
                 can_eat = not person.restriction.forbids(food_cat) if person.restriction else True
-                row[category] = "✅" if use_emojis else can_eat
-                if use_emojis and not can_eat:
-                    row[category] = "❌"
+                row[category] = "✅" if use_emojis and can_eat else "❌" if use_emojis else can_eat
             matrix_data.append(row)
+        
         return pd.DataFrame(matrix_data)
     
     def get_common_restrictions(self, min_count: int = 2) -> Dict[str, int]:

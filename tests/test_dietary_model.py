@@ -1,32 +1,10 @@
 import pytest
 from mealplanner.dietary_model import *
+from mealplanner.defaults import setup_defaults
 
 @pytest.fixture(autouse=True)
 def setup_food_categories_and_tags():
-    FoodCategory.reset()
-    FoodCategory.define("ANIMAL_PRODUCTS")
-    FoodCategory.define("MEAT", {"ANIMAL_PRODUCTS"})
-    FoodCategory.define("DAIRY", {"ANIMAL_PRODUCTS"})
-    FoodCategory.define("FISH", {"ANIMAL_PRODUCTS"})
-    FoodCategory.define("SHELLFISH", {"FISH"})
-    FoodCategory.define("NUTS")
-    FoodCategory.define("CHEESE", {"DAIRY"})
-    FoodCategory.define("SALMON", {"FISH"})
-    FoodCategory.define("CHICKEN", {"MEAT"})
-    FoodCategory.define("ALMOND", {"NUTS"})
-    FoodCategory.define("EGGS", {"ANIMAL_PRODUCTS"})
-    FoodCategory.define("BEEF", {"MEAT"})
-    tag_registry._tag_map.clear()
-    tag_registry.register_tag("VEGAN", DietaryRestriction({"ANIMAL_PRODUCTS"}), category="ethical")
-    tag_registry.register_tag("VEGETARIAN", DietaryRestriction({"MEAT", "FISH", "SHELLFISH"}), category="ethical")
-    tag_registry.register_tag("PESCATARIAN", DietaryRestriction({"MEAT"}), category="ethical")
-    tag_registry.register_tag("NUT-FREE", DietaryRestriction({"NUTS"}), category="allergen")
-    tag_registry.register_tag("DAIRY-FREE", DietaryRestriction({"DAIRY"}), category="allergen")
-    tag_registry.register_tag("EGG-FREE", DietaryRestriction({"EGGS"}), category="allergen")
-    tag_registry.register_tag("SHELLFISH-FREE", DietaryRestriction({"SHELLFISH"}), category="allergen")
-    tag_registry.register_tag("FISH-FREE", DietaryRestriction({"FISH"}), category="allergen")
-    tag_registry.register_tag("MEAT-FREE", DietaryRestriction({"MEAT"}), category="ethical")
-    tag_registry.register_tag("BEEF-FREE", DietaryRestriction({"BEEF"}), category="allergen")
+    setup_defaults()
     yield
     FoodCategory.reset()
     tag_registry._tag_map.clear()
