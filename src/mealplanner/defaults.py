@@ -57,6 +57,9 @@ def setup_default_food_categories():
     FoodCategory.define("GLUTEN", {"WHEAT"})
     FoodCategory.define("SOY", {"LEGUMES"})
     
+    # Plant-based subcategories
+    FoodCategory.define("TOFU", {"SOY"})
+    
     # Cuisine categories
     FoodCategory.define("CUISINE")
     FoodCategory.define("ASIAN", {"CUISINE"})
