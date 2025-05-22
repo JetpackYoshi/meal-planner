@@ -1,10 +1,21 @@
 import pandas as pd
 from mealplanner.guest_list_analyzer import analyze_guest_list
-from mealplanner.dietary_model import tag_registry, DietaryRestriction
+from mealplanner.dietary_model import tag_registry, DietaryRestriction, FoodCategory
+
+# Reset and define food categories with proper hierarchy
+FoodCategory.reset()
+FoodCategory.define("ANIMAL_PRODUCTS")
+FoodCategory.define("MEAT", {"ANIMAL_PRODUCTS"})
+FoodCategory.define("DAIRY", {"ANIMAL_PRODUCTS"})
+FoodCategory.define("FISH", {"ANIMAL_PRODUCTS"})
+FoodCategory.define("SHELLFISH", {"FISH"})  # SHELLFISH is a subcategory of FISH
+FoodCategory.define("EGGS", {"ANIMAL_PRODUCTS"})
+FoodCategory.define("NUTS")
+FoodCategory.define("BEEF", {"MEAT"})
 
 # Initialize tag registry with common dietary tags
 tag_registry.register_tag("VEGAN", DietaryRestriction({"ANIMAL_PRODUCTS"}), category="ethical")
-tag_registry.register_tag("VEGETARIAN", DietaryRestriction({"MEAT", "FISH", "SHELLFISH"}), category="ethical")
+tag_registry.register_tag("VEGETARIAN", DietaryRestriction({"MEAT", "FISH", "SHELLFISH"}), category="ethical")  # FISH includes SHELLFISH
 tag_registry.register_tag("PESCATARIAN", DietaryRestriction({"MEAT"}), category="ethical")
 tag_registry.register_tag("NUT-FREE", DietaryRestriction({"NUTS"}), category="allergen")
 tag_registry.register_tag("DAIRY-FREE", DietaryRestriction({"DAIRY"}), category="allergen")

@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import List, Dict, Optional, Set
-from .dietary_model import Person, DietaryRestriction, tag_registry
+from .dietary_model import Person, DietaryRestriction, tag_registry, FoodCategory
 from .natural_language_parsing import parse_nl_restriction, NO_RESTRICTION_PHRASES
 
 class GuestListAnalyzer:
@@ -58,37 +58,7 @@ class GuestListAnalyzer:
         """
         if not restriction or not restriction.excluded:
             return {"NO-RESTRICTIONS"}
-            
-        # Get base tags
-        tags = set(tag_registry.generate_tags(restriction))
-        
-        # Add implied tags based on restrictions
-        if "ANIMAL_PRODUCTS" in restriction.excluded:
-            # Vegan implies no animal products at all
-            tags.update({
-                "DAIRY-FREE", "EGG-FREE", "MEAT-FREE", 
-                "FISH-FREE", "SHELLFISH-FREE", "BEEF-FREE"
-            })
-            # Also add the actual exclusions
-            restriction.excluded.update({
-                "MEAT", "FISH", "SHELLFISH", "DAIRY", "EGGS", "BEEF"
-            })
-        if "MEAT" in restriction.excluded:
-            tags.add("MEAT-FREE")
-        if "FISH" in restriction.excluded:
-            tags.add("FISH-FREE")
-        if "SHELLFISH" in restriction.excluded:
-            tags.add("SHELLFISH-FREE")
-        if "DAIRY" in restriction.excluded:
-            tags.add("DAIRY-FREE")
-        if "EGGS" in restriction.excluded:
-            tags.add("EGG-FREE")
-        if "NUTS" in restriction.excluded:
-            tags.add("NUT-FREE")
-        if "BEEF" in restriction.excluded:
-            tags.add("BEEF-FREE")
-        
-        return tags
+        return set(tag_registry.get_all_implied_tags(restriction))
     
     def get_restriction_summary(self) -> Dict[str, int]:
         """
@@ -129,37 +99,28 @@ class GuestListAnalyzer:
         """
         Create a matrix showing which food categories each person can eat.
         True means they can eat it, False means they cannot.
-        
-        Parameters
-        ----------
-        use_emojis : bool
-            If True, use ✅/❌ instead of True/False in the output
-            
-        Returns
-        -------
-        pd.DataFrame
-            Matrix with people as rows and food categories as columns
         """
         # Get all unique food categories from restrictions
         all_categories = set()
         for person in self.people:
             if person.restriction and person.restriction.excluded:
                 all_categories.update(person.restriction.excluded)
-        
+        # Expand to include all defined categories (for hierarchy)
+        all_categories = set(cat for cat in all_categories)
+        all_categories = sorted(all_categories | {cat.name for cat in tag_registry._tag_map.values() if hasattr(cat, 'name')})
+        # Actually, use all defined FoodCategories for a complete matrix
+        all_categories = sorted({cat.name for cat in FoodCategory.all()})
         # Create the matrix
         matrix_data = []
         for person in self.people:
             row = {"Name": person.name}
-            for category in sorted(all_categories):
-                # If no restrictions or category not in restrictions, they can eat it
-                can_eat = (
-                    not person.restriction or 
-                    not person.restriction.excluded or
-                    category not in person.restriction.excluded
-                )
-                row[category] = "✅" if can_eat else "❌" if use_emojis else can_eat
+            for category in all_categories:
+                food_cat = FoodCategory.get(category)
+                can_eat = not person.restriction.forbids(food_cat) if person.restriction else True
+                row[category] = "✅" if use_emojis else can_eat
+                if use_emojis and not can_eat:
+                    row[category] = "❌"
             matrix_data.append(row)
-            
         return pd.DataFrame(matrix_data)
     
     def get_common_restrictions(self, min_count: int = 2) -> Dict[str, int]:

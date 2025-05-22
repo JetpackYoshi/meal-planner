@@ -261,52 +261,43 @@ class TagRegistry:
 
     def generate_tags(self, restriction: DietaryRestriction) -> list[str]:
         """
-        Generates a list of canonical tags that describe the restriction.
-        Uses exact match or greedy subset cover.
-
-        Parameters
-        ----------
-        restriction : DietaryRestriction
-            The restriction to evaluate against known tags.
-
-        Returns
-        -------
-        list of str
-            The best-fitting tags to describe the restriction.
-            
-        Examples
-        --------
-        >>> r = DietaryRestriction({"MEAT", "DAIRY"})
-        >>> tag_registry.generate_tags(r)
-        ['MEAT-FREE', 'DAIRY-FREE']  # Assuming these are registered
+        Returns only canonical tags (greedy cover) for the restriction.
         """
-        normalized = restriction.excluded
-
-        # Exact match
+        if not restriction or not restriction.excluded:
+            return ["NO-RESTRICTIONS"]
+        normalized = set(restriction.excluded)
+        # 1. Exact match
         for tag in self._tag_map.values():
             if normalized == tag.restriction.excluded:
                 return [tag.name]
-
-        # Greedy subset match
+        # 2. Greedy cover with canonical tags (largest first)
         candidates = []
         for tag in self._tag_map.values():
-            if tag.restriction.excluded.issubset(normalized):
+            if tag.restriction.excluded and tag.restriction.excluded <= normalized:
                 candidates.append((tag.name, tag.restriction.excluded))
-
+        candidates.sort(key=lambda x: -len(x[1]))
         result = []
         remaining = set(normalized)
-        for name, excluded in sorted(candidates, key=lambda x: -len(x[1])):
-            if not excluded <= remaining:
-                continue
-            result.append(name)
-            remaining -= excluded
-            if not remaining:
-                break
-
-        if remaining:
-            result.extend(f"{x}-FREE" for x in sorted(remaining))
-
+        for name, excluded in candidates:
+            if excluded <= remaining:
+                result.append(name)
+                remaining -= excluded
+        # 3. If still exclusions left, add -FREE tags
+        for cat in sorted(remaining):
+            result.append(f"{cat}-FREE")
         return result
+
+    def get_all_implied_tags(self, restriction: DietaryRestriction) -> list[str]:
+        """
+        Returns all tags implied by the restriction (canonical + all tags implied by the hierarchy).
+        """
+        if not restriction or not restriction.excluded:
+            return ["NO-RESTRICTIONS"]
+        result = set(self.generate_tags(restriction))
+        for tag in self._tag_map.values():
+            if any(restriction.forbids(FoodCategory.get(cat)) for cat in tag.restriction.excluded):
+                result.add(tag.name)
+        return sorted(result)
 
     def all_tags(self) -> list[str]:
         return list(self._tag_map.keys())

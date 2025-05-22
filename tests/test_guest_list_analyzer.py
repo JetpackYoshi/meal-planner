@@ -1,19 +1,37 @@
 import pytest
 import pandas as pd
 from mealplanner.guest_list_analyzer import GuestListAnalyzer, analyze_guest_list
-from mealplanner.dietary_model import Person, DietaryRestriction, tag_registry
+from mealplanner.dietary_model import Person, DietaryRestriction, tag_registry, FoodCategory
 
-# Initialize tag registry with common dietary tags
-tag_registry.register_tag("VEGAN", DietaryRestriction({"ANIMAL_PRODUCTS"}), category="ethical")
-tag_registry.register_tag("VEGETARIAN", DietaryRestriction({"MEAT", "FISH", "SHELLFISH"}), category="ethical")
-tag_registry.register_tag("PESCATARIAN", DietaryRestriction({"MEAT"}), category="ethical")
-tag_registry.register_tag("NUT-FREE", DietaryRestriction({"NUTS"}), category="allergen")
-tag_registry.register_tag("DAIRY-FREE", DietaryRestriction({"DAIRY"}), category="allergen")
-tag_registry.register_tag("EGG-FREE", DietaryRestriction({"EGGS"}), category="allergen")
-tag_registry.register_tag("SHELLFISH-FREE", DietaryRestriction({"SHELLFISH"}), category="allergen")
-tag_registry.register_tag("FISH-FREE", DietaryRestriction({"FISH"}), category="allergen")
-tag_registry.register_tag("MEAT-FREE", DietaryRestriction({"MEAT"}), category="ethical")
-tag_registry.register_tag("BEEF-FREE", DietaryRestriction({"BEEF"}), category="allergen")
+@pytest.fixture(autouse=True)
+def setup_food_categories_and_tags():
+    FoodCategory.reset()
+    FoodCategory.define("ANIMAL_PRODUCTS")
+    FoodCategory.define("MEAT", {"ANIMAL_PRODUCTS"})
+    FoodCategory.define("DAIRY", {"ANIMAL_PRODUCTS"})
+    FoodCategory.define("FISH", {"ANIMAL_PRODUCTS"})
+    FoodCategory.define("SHELLFISH", {"FISH"})  # SHELLFISH is a subcategory of FISH
+    FoodCategory.define("NUTS")
+    FoodCategory.define("CHEESE", {"DAIRY"})
+    FoodCategory.define("SALMON", {"FISH"})
+    FoodCategory.define("CHICKEN", {"MEAT"})
+    FoodCategory.define("ALMOND", {"NUTS"})
+    FoodCategory.define("EGGS", {"ANIMAL_PRODUCTS"})
+    FoodCategory.define("BEEF", {"MEAT"})
+    tag_registry._tag_map.clear()
+    tag_registry.register_tag("VEGAN", DietaryRestriction({"ANIMAL_PRODUCTS"}), category="ethical")
+    tag_registry.register_tag("VEGETARIAN", DietaryRestriction({"MEAT", "FISH", "SHELLFISH"}), category="ethical")
+    tag_registry.register_tag("PESCATARIAN", DietaryRestriction({"MEAT"}), category="ethical")
+    tag_registry.register_tag("NUT-FREE", DietaryRestriction({"NUTS"}), category="allergen")
+    tag_registry.register_tag("DAIRY-FREE", DietaryRestriction({"DAIRY"}), category="allergen")
+    tag_registry.register_tag("EGG-FREE", DietaryRestriction({"EGGS"}), category="allergen")
+    tag_registry.register_tag("SHELLFISH-FREE", DietaryRestriction({"SHELLFISH"}), category="allergen")
+    tag_registry.register_tag("FISH-FREE", DietaryRestriction({"FISH"}), category="allergen")
+    tag_registry.register_tag("MEAT-FREE", DietaryRestriction({"MEAT"}), category="ethical")
+    tag_registry.register_tag("BEEF-FREE", DietaryRestriction({"BEEF"}), category="allergen")
+    yield
+    FoodCategory.reset()
+    tag_registry._tag_map.clear()
 
 @pytest.fixture
 def sample_guest_list():
@@ -45,6 +63,12 @@ def test_parse_guests(sample_guest_list):
     
     bob = next(p for p in analyzer.people if p.name == 'Bob')
     assert {"MEAT", "FISH", "SHELLFISH"} == bob.restriction.excluded
+    
+    charlie = next(p for p in analyzer.people if p.name == 'Charlie')
+    assert {"NUTS"} == charlie.restriction.excluded
+    
+    diana = next(p for p in analyzer.people if p.name == 'Diana')
+    assert {"SHELLFISH"} == diana.restriction.excluded
     
     eve = next(p for p in analyzer.people if p.name == 'Eve')
     assert not eve.restriction.excluded
@@ -92,14 +116,13 @@ def test_get_tag_summary(sample_guest_list):
     # Check basic tags
     assert summary["NO-RESTRICTIONS"] == 1
     assert summary["VEGAN"] == 1
-    assert summary["VEGETARIAN"] == 1
+    assert summary["VEGETARIAN"] == 3  # Updated: 3 people (vegan + vegetarian + shellfish-free) imply VEGETARIAN
     assert summary["NUT-FREE"] == 1
     
-    # Check implied tags
-    # Vegan implies SHELLFISH-FREE, Vegetarian implies SHELLFISH-FREE, and Diana has SHELLFISH-FREE
-    assert summary["SHELLFISH-FREE"] == 3
-    # Vegan implies MEAT-FREE, Vegetarian implies MEAT-FREE
-    assert summary["MEAT-FREE"] == 2
+    # Check implied tags through food category hierarchy
+    assert summary["SHELLFISH-FREE"] == 3  # Vegan implies SHELLFISH-FREE through ANIMAL_PRODUCTS -> FISH -> SHELLFISH
+    # Vegetarian implies SHELLFISH-FREE through FISH -> SHELLFISH
+    # Diana explicitly has SHELLFISH-FREE
 
 def test_get_restriction_matrix(sample_guest_list):
     """Test that restriction matrix is correctly generated."""

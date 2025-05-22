@@ -14,6 +14,7 @@ logger.setLevel(logging.DEBUG)
 # Keywords and their corresponding exclusion sets
 KEYWORD_MAP = {
     "vegetarian": {"MEAT", "FISH", "SHELLFISH"},
+    "veggie": {"MEAT", "FISH", "SHELLFISH"},
     "vegan": {"ANIMAL_PRODUCTS"},
     "pescatarian": {"MEAT"},
     "dairy": {"DAIRY"},
@@ -33,6 +34,13 @@ KEYWORD_MAP = {
     "peanuts": {"NUTS"},
     "tree nut": {"NUTS"},
     "gluten": {"GLUTEN"},
+    "no meat": {"MEAT"},
+    "no fish": {"FISH"},
+    "no shellfish": {"SHELLFISH"},
+    "no dairy": {"DAIRY"},
+    "no eggs": {"EGGS"},
+    "no nuts": {"NUTS"},
+    "no gluten": {"GLUTEN"},
 }
 
 NO_RESTRICTION_PHRASES = {
