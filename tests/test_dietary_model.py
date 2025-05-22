@@ -48,15 +48,29 @@ def test_tag_generation_exact_and_partial():
     vegan_r = DietaryRestriction({"ANIMAL_PRODUCTS"})
     vegetarian_r = DietaryRestriction({"MEAT", "FISH", "SHELLFISH"})
     custom_r = DietaryRestriction({"MEAT", "FISH", "SHELLFISH", "NUTS"})
-    
+
     # Register the tags first
     tag_registry.register_tag("VEGAN", vegan_r, category="ethical", overwrite=True)
     tag_registry.register_tag("VEGETARIAN", vegetarian_r, category="ethical", overwrite=True)
     tag_registry.register_tag("NUT-FREE", DietaryRestriction({"NUTS"}), category="allergen", overwrite=True)
-    
-    assert tag_registry.generate_tags(vegan_r) == ["VEGAN"]
-    assert tag_registry.generate_tags(vegetarian_r) == ["VEGETARIAN"]
-    assert tag_registry.generate_tags(custom_r) == []
+    tag_registry.register_tag("DAIRY-FREE", DietaryRestriction({"DAIRY"}), category="allergen", overwrite=True)
+    tag_registry.register_tag("EGG-FREE", DietaryRestriction({"EGGS"}), category="allergen", overwrite=True)
+    tag_registry.register_tag("FISH-FREE", DietaryRestriction({"FISH"}), category="allergen", overwrite=True)
+    tag_registry.register_tag("SHELLFISH-FREE", DietaryRestriction({"SHELLFISH"}), category="allergen", overwrite=True)
+    tag_registry.register_tag("MEAT-FREE", DietaryRestriction({"MEAT"}), category="ethical", overwrite=True)
+    tag_registry.register_tag("PESCATARIAN", DietaryRestriction({"MEAT"}), category="ethical", overwrite=True)
+
+    vegan_tags = set(tag_registry.generate_tags(vegan_r))
+    expected_vegan_tags = {"VEGAN", "VEGETARIAN", "PESCATARIAN", "MEAT-FREE", "DAIRY-FREE", "EGG-FREE", "FISH-FREE", "SHELLFISH-FREE", "BEEF-FREE"}
+    assert vegan_tags == expected_vegan_tags
+
+    vegetarian_tags = set(tag_registry.generate_tags(vegetarian_r))
+    expected_vegetarian_tags = {"VEGETARIAN", "PESCATARIAN", "MEAT-FREE", "FISH-FREE", "SHELLFISH-FREE", "BEEF-FREE"}
+    assert vegetarian_tags == expected_vegetarian_tags
+
+    custom_tags = set(tag_registry.generate_tags(custom_r))
+    expected_custom_tags = {"VEGETARIAN", "PESCATARIAN", "MEAT-FREE", "NUT-FREE", "BEEF-FREE", "FISH-FREE", "SHELLFISH-FREE"}
+    assert custom_tags == expected_custom_tags
 
 def test_person_label():
     person = Person("Jamie", tag="VEGAN")

@@ -250,32 +250,58 @@ class TagRegistry:
         """Retrieves the restriction associated with a tag."""
         return self._tag_map[tag_name]
 
-    def generate_tags(self, restriction: DietaryRestriction) -> list[str]:
-        """Generates a list of tags that match the given restriction."""
-        matching_tags = []
+    def get_implied_tags(self, restriction: DietaryRestriction) -> set[str]:
+        """
+        Get the set of tags implied by a dietary restriction.
+        This is determined by checking which registered tags' restrictions
+        are satisfied by the given restriction, taking into account the
+        hierarchical relationships between food categories.
+        
+        Parameters
+        ----------
+        restriction : DietaryRestriction
+            The restriction to check for implied tags
+            
+        Returns
+        -------
+        set[str]
+            Set of tag names that are implied by the restriction
+        """
+        if not restriction or not restriction.excluded:
+            return {"NO-RESTRICTIONS"}
+            
+        implied_tags = set()
         for tag_name, tag_restriction in self._tag_map.items():
-            if tag_restriction.excluded == restriction.excluded:
-                matching_tags.append(tag_name)
-        return matching_tags
-
-    def get_all_implied_tags(self, restriction: DietaryRestriction) -> list[str]:
-        """Returns all tags that are implied by the given restriction."""
-        implied_tags = []
-        for tag_name, tag_restriction in self._tag_map.items():
-            if restriction.excluded.issuperset(tag_restriction.excluded):
-                implied_tags.append(tag_name)
+            # A tag is implied if all categories in its restriction are excluded
+            # or if their parent categories are excluded
+            if all(
+                any(
+                    FoodCategory.get(cat).is_a(excluded_cat)
+                    for excluded_cat in restriction.excluded
+                )
+                for cat in tag_restriction.excluded
+            ):
+                implied_tags.add(tag_name)
         return implied_tags
 
+    def generate_tags(self, restriction: DietaryRestriction) -> list[str]:
+        """Generates appropriate tags for a given restriction."""
+        return list(self.get_implied_tags(restriction))
+
+    def get_all_implied_tags(self, restriction: DietaryRestriction) -> list[str]:
+        """Gets all tags implied by a restriction, including those from parent categories."""
+        return list(self.get_implied_tags(restriction))
+
     def all_tags(self) -> list[str]:
-        """Returns a list of all registered tags."""
+        """Returns a list of all registered tag names."""
         return list(self._tag_map.keys())
 
     def get_tags_by_category(self, category: str) -> list[str]:
-        """Returns a list of tags in the specified category."""
-        return [tag for tag, cat in self._tag_categories.items() if cat == category]
+        """Returns a list of tag names in the specified category."""
+        return [tag for tag, cat in self._tag_categories.items() if cat == category.lower()]
 
     def clear(self):
-        """Clears all registered tags (useful for testing)."""
+        """Clears all registered tags."""
         self._tag_map.clear()
         self._tag_categories.clear()
 

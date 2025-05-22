@@ -45,22 +45,7 @@ class GuestListAnalyzer:
     
     def _get_implied_tags(self, restriction: DietaryRestriction) -> set[str]:
         """Get the set of implied tags for a given restriction."""
-        if not restriction or not restriction.excluded:
-            return {"NO-RESTRICTIONS"}
-        #TODO: This section needs to be changed, as this category match should not be hard-coded.
-        tags = set()
-        category_to_tags = {
-            "ANIMAL_PRODUCTS": {"VEGAN", "DAIRY-FREE", "EGG-FREE", "MEAT-FREE", "FISH-FREE", "SHELLFISH-FREE"},
-            "MEAT": {"VEGETARIAN"},
-            "DAIRY": {"DAIRY-FREE"},
-            "NUTS": {"NUT-FREE"},
-            "SHELLFISH": {"SHELLFISH-FREE", "VEGETARIAN"}
-        }
-        for category in restriction.excluded:
-            food_cat = FoodCategory.get(category)
-            if food_cat and food_cat.name in category_to_tags:
-                tags.update(category_to_tags[food_cat.name])
-        return tags
+        return tag_registry.get_implied_tags(restriction)
     
     def get_restriction_summary(self) -> Dict[str, int]:
         """
